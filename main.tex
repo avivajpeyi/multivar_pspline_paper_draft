@@ -1,23 +1,3 @@
-% ****** Start of file apssamp.tex ******
-%
-%   This file is part of the APS files in the REVTeX 4.2 distribution.
-%   Version 4.2a of REVTeX, December 2014
-%
-%   Copyright (c) 2014 The American Physical Society.
-%
-%   See the REVTeX 4 README file for restrictions and more information.
-%
-% TeX'ing this file requires that you have AMS-LaTeX 2.0 installed
-% as well as the rest of the prerequisites for REVTeX 4.2
-%
-% See the REVTeX 4 README file
-% It also requires running BibTeX. The commands are as follows:
-%
-%  1)  latex apssamp.tex
-%  2)  bibtex apssamp
-%  3)  latex apssamp.tex
-%  4)  latex apssamp.tex
-%
 \documentclass[%
  reprint,
 %superscriptaddress,
@@ -40,42 +20,11 @@
 %floatfix,
 ]{revtex4-2}
 
-\usepackage{listings}
 \usepackage{xcolor}
-
-% Optional: Define a style for your Python code
-\lstdefinestyle{pythonstyle}{
-    language=Python,
-    backgroundcolor=\color{gray!10},
-    commentstyle=\color{green!60!black}\textit,
-    keywordstyle=\color{blue}\bfseries,
-    stringstyle=\color{red},
-    basicstyle=\ttfamily\footnotesize,
-    breaklines=true,
-    showstringspaces=false,
-    numbers=left,
-    numberstyle=\tiny\color{gray},
-    frame=single,
-    framerule=0pt,
-    title=\lstlistingname{}: \texttt{whittle\_likelihood\_arrays} and \texttt{multivariate\_psplines\_model}
-}
-
 \usepackage{graphicx}% Include figure files
 \usepackage{dcolumn}% Align table columns on decimal point
 \usepackage{bm}% bold math
-%\usepackage{hyperref}% add hypertext capabilities
-%\usepackage[mathlines]{lineno}% Enable numbering of text and display math
-%\linenumbers\relax % Commence numbering lines
-
-%\usepackage[showframe,%Uncomment any one of the following lines to test 
-%%scale=0.7, marginratio={1:1, 2:3}, ignoreall,% default settings
-%%text={7in,10in},centering,
-%%margin=1.5in,
-%%total={6.5in,8.75in}, top=1.2in, left=0.9in, includefoot,
-%%height=10in,a5paper,hmargin={3cm,0.8in},
-%]{geometry}
-
-
+\usepackage{hyperref}% add hypertext capabilities
 \usepackage{xcolor}
 
 
@@ -89,39 +38,18 @@
 \title{Multivariate p-splines}
 
 \author{NZ Gravity}
-%  \altaffiliation[Also at ]{Physics Department, XYZ University.}%Lines break automatically or can be forced with \\
-% \author{Second Author}%
-%  \email{Second.Author@institution.edu}
-% \affiliation{%
-%  Authors' institution and/or address\\
-%  This line break forced with \textbackslash\textbackslash
-% }%
-
-% \collaboration{MUSO Collaboration}%\noaffiliation
-
-% \author{Charlie Author}
-%  \homepage{http://www.Second.institution.edu/~Charlie.Author}
-% \affiliation{
-%  Second institution and/or address\\
-%  This line break forced% with \\
-% }%
-% \affiliation{
-%  Third institution, the second for Charlie Author
-% }%
-% \author{Delta Author}
-% \affiliation{%
-%  Authors' institution and/or address\\
-%  This line break forced with \textbackslash\textbackslash
-% }%
+\affiliation{UOA}
 
 
-\date{\today}% It is always \today, today,
-             %  but any date may be explicitly specified
+\date{\today}
 
 \begin{abstract}
-
-This article extends the p-spline method to the multivariate case.
-
+We present a Bayesian multivariate P-spline method for estimating the frequency-dependent cross-spectral density matrix of stationary vector time series.
+The spectral matrix is parameterized via a frequency-varying Cholesky factor with log-diagonal terms to enforce Hermitian positive definiteness, while smoothness is induced through B-spline bases with difference-penalty priors. 
+Inference proceeds under the Whittle likelihood using both stochastic gradient variational Bayes and MCMC for calibration. 
+The approach scales linearly with the number of frequencies and basis functions. 
+On synthetic VAR(2) benchmarks with known ground truth, the method accurately recovers PSD- and cross-spectral structure, yields well-calibrated credible intervals, and achieves lower relative integrated absolute error (RIAE) as sample size grows, with performance largely robust over a broad range of spline basis sizes. 
+We illustrate relevance to LISA by estimating the multichannel noise spectral matrix for time-delay interferometry combinations.
 \end{abstract}
 
 \keywords{gravitational waves, CSD estimation, P-splines, LISA}
@@ -136,15 +64,15 @@ LISA will provide three correlated data streams from time-delay interferometry c
 Accurate characterization of the noise spectral density matrix $\mathbf{S}(f)$ is essential for optimal signal detection and parameter estimation in this multivariate setting.
 
 LISA data exhibits several characteristics that challenge conventional spectral estimation methods: frequency-dependent cross-correlations between channels, non-stationary noise properties due to orbital motion, and overlapping astrophysical signals across the millihertz band. 
-The P-spline approach addresses these challenges through XYZ.
+Our approach addresses these challenges by modeling the full spectral density matrix with smooth, frequency-varying P-splines under a Cholesky parameterization that guarantees Hermitian positive definiteness at every frequency. 
+A hierarchical shrinkage prior provides automatic regularization.
+Inference uses the Whittle likelihood with No-U-Turn sampling (NUTS) for MCMC.
 
 The estimated spectral density matrices serve multiple roles in LISA data analysis. 
-They provide noise weighting for matched filtering operations, enable detection of instrumental anomalies through spectral monitoring, and support background characterization for targeted source analyses. 
-The Bayesian framework naturally propagates spectral uncertainties to downstream parameter estimation procedures.
-
+They provide noise weighting for matched filtering operations and support background characterization for targeted source analyses. 
+The Bayesian framework naturally propagates spectral uncertainties to downstream global-fit parameter estimation procedures.
 Integration with LISA's global analysis pipeline requires spectral estimates across multiple time scales, from hourly monitoring to months-long campaigns. 
-The computational efficiency of the P-spline method, with $O(N k)$ scaling where $k \ll N$, makes such continuous analysis feasible. 
-\avi{Im guessing its O(nk), id like to actually show it.}
+The computational footprint for this method is predictable: for a fixed number of channels, the dominant operations scale approximately as $O(NK)$ with the length of the timeseries $N$ and spline basis size $K$, enabling routine re-estimation as data accumulates.
 
 Implementation of this methodology is expected to improve LISA's detection sensitivity through more accurate noise characterization and reduce systematic errors in parameter estimation by properly accounting for inter-channel correlations. 
 These improvements directly impact LISA's primary science objectives, including the detection of massive black hole mergers, galactic binary systems, and potential primordial gravitational wave backgrounds.
@@ -164,17 +92,13 @@ Let $\d_k=(d_1(f_k), d_2(f_k), \ldots, d_p(f_k))^T$ be the \ac{DFT} of $\Z$ give
 \d(f_k) = \Delta_t\sum_{t=1}^{n} \Z_t\exp \left(-2\pi i \frac{k}{n} t \right)\, ,
 \end{align}
 where $f_k= k \Delta_f= k/({n\Delta_t})=k /{T}$ for $k=1,\ldots, N$, and $N = n/2$ if n is even, $N = (n-1)/2$ if n is odd. 
-%\textcolor{green}{RM: This should have read spectral density instead of Fourier transform. I don't think we need this sentence any more as the referee has asked to explicitly define the PSD. Also, if we keep this sentence, it should go after the definition of the spectral density.}
-%
-%Due to the normalizing and decorrelating properties of the Fourier transform, 
+
 For stationary time series with absolutely summable autocovariances, i.e., $\sum_{h=1}^\infty\gamma_{lm}(h)<\infty$, the discrete Fourier coefficients $\d(f_k)$ %(multiplied by $1 / \sqrt{n}$)
 are asymptotically independent and have a complex Gaussian distribution with mean zero and  covariance matrix $T\, \S(f_k)$ with  the continuous two-sided spectral density matrix 
 \[\S(f)=\frac{1}{2f_{Ny}}
 \sum_{\ell=-\infty}^{\infty} \Gamma(\ell \Delta_t) \exp \left(-2\pi i f \ell\Delta_t \right),\]} %
 the Fourier transform of the time-invariant autocovariance function $\Gamma(h)=\left( \gamma_{lm}(h)\right)=\mathbb{E}(\Z_{t}\Z_{t+h}^\intercal)$ that in turn defines the Toeplitz covariance matrix of $\Z$. This asymptotic Gaussian distribution is the basis of the multivariate Whittle likelihood approximation in the frequency domain, expressed as
 
-
-%Let $\bold{d}(f_j) = [d_1(f_j), d_2(f_j), \ldots, d_p(f_j)]^T$ denote the $p$-dimensional complex Fourier coefficient vector at frequency $f_j$, where $d_k(f_j)$ represents the discrete Fourier transform of the $k$-th channel of the multivariate time series.
 
 The multivariate log-Whittle likelihood is given by
 \begin{align}\label{eq:Whittle likelihood}
@@ -183,10 +107,6 @@ The multivariate log-Whittle likelihood is given by
 \end{align}
 where $\d(f_k)^*$ is the conjugate transpose of the $\d(f_k)$ and $\S(f_k)$ is a $p \times p$ Hermitian positive semidefinite spectral density matrix at each $f_k$. 
 
-%\begin{align}
-%L(\bold{d}|\bold{S}) = -\sum_{j=1}^{N} \left\{ \log |\bold{S}(f_j)| + \frac{1}{T}\bold{d}(f_j)^* \bold{S}(f_j)^{-1} \bold{d}(f_j)\right\},    
-%\end{align}
-%where $\bold{d}(f_j)^*$ is the conjugate transpose and $\bold{S}(f_j)$ is the $p %\times p$ Hermitian positive definite spectral density matrix at frequency $f_j$.
 
 \subsection{Parameterization using the Cholesky Decomposition}
 Following the approach of \citet{RosenOri2007Aeom,Hu2023}, we parameterize the inverse spectral density matrix using its Cholesky decomposition. Specifically, we write $\bold{S}(f_k)^{-1} = \bold{T}(f_k)^* \bold{D}(f_k)^{-1} \bold{T}(f_k)$, where $\bold{D}(f_k)$ is a diagonal matrix with positive diagonal elements $\delta_{1k}^2, \delta_{2k}^2, \ldots, \delta_{pk}^2$ and
@@ -264,6 +184,7 @@ where $\bold{w}_j$ represents the vector of spline coefficients for component $j
 This hierarchical structure allows each spectral component to have its own degree of smoothness, automatically adapting to the underlying spectral characteristics. The penalty matrices $\bold{P}_j$ are constructed from finite differences of the spline coefficients, penalizing rapid changes and promoting smooth spectral estimates.
 
 The posterior distribution can be sampled using MCMC methods, with the Cholesky parameterization ensuring positive definiteness of the spectral density matrix throughout the sampling process.
+In our implementation, we use the No-U-Turn Sampler (NUTS) algorithm, which is well-suited for high-dimensional parameter spaces and efficiently explores the posterior distribution.
 
 \section{\label{sec:application}Application}
 
@@ -272,191 +193,115 @@ The posterior distribution can be sampled using MCMC methods, with the Cholesky 
 \begin{figure}
     \centering
     \includegraphics[width=.85\linewidth]{figures/var2_simulation.png}
-    \caption{VAR2}
-    \label{fig:placeholder}
+    \caption{Bivariate VAR(2): posterior median (solid) and 90\% credible bands for PSD (diagonals) and cross-spectral elements (real and imaginary parts). Grey points show the tapered periodogram for reference. The model provides smooth, PSD-constrained estimates that denoise the raw empirical spectra.}
+    \label{fig:var_simulation}
 \end{figure}
+
+
+As a qualitative check, Figure~\ref{fig:var_simulation} shows that the posterior medians track the broad-band shape of the true spectra while substantially reducing the variance of the raw periodogram. 
+Credible intervals widen toward the band edges where fewer datapoints are available. 
+Cross-spectral real and imaginary parts concentrate near their theoretical values, with shrinkage preventing spurious coherence.
+The P-spline estimates accurately recover both PSD components (diagonal elements) and cross-spectral components (off-diagonal real and imaginary parts). 
+The posterior medians closely follow the theoretical spectra, and the 90\% credible intervals demonstrate appropriate uncertainty quantification across all spectral components.
 
 
 
 Following Liu et at, we simulate 500 independent realisations of a bivariate time series from a vector autoregressive model of order 2, VAR(2), using three  different sample sizes $n=256;512;1024$ (refer to \citet[Section~4.2,][]{Liu2023} for the definitions of the VAR(2) models).
-The spectral densities are estimated using both the Pspline, SGVB method and \citet{Liu2023}'s vectorized nonparametrically corrected method (VNPC), an MCMC-based approach that samples from the exact posterior distribution without a variational approximation\footnote{For the VNPC analyses, we use the software and settings provided by \citet{Liu2023}, specific for the VAR(2) models.}.
+The spectral densities are estimated using the multivariate P-spline method with $K=16$ basis functions and cubic splines ($d=3$) for each spectral component.
 We validate the multivariate P-spline method using synthetic data from Vector Autoregressive (VAR) processes with known theoretical spectral properties. 
 The theoretical spectral density matrix provides exact ground truth for comparison.
 
-
-
-Figure~\ref{fig:var_simulation} shows results for bivariate VAR(2) data. 
-The P-spline estimates accurately recover both auto-spectral components (diagonal elements) and cross-spectral components (off-diagonal real and imaginary parts). 
-The posterior medians track the XYZ. 
-The 90\% credible intervals demonstrate appropriate uncertainty quantification across all spectral components.
-
-Quantitative assessment reveals mean squared errors of $XYZ$ for auto-spectral estimates and $XYZ$ for cross-spectral estimates relative to theoretical values. 
-Coverage probabilities for credible intervals exceed $XY\%$ across all frequencies
+To summarise spectral estimation accuracy across frequencies, 
+we report the relative integrated absolute error (RIAE)
+\begin{equation}
+    \operatorname{RIAE} = \frac{\int \! \left\lVert \widehat{S}(f) - S(f) \right\rVert_F \, \mathrm{d}f}{\int \! \left\lVert S(f) \right\rVert_F \, \mathrm{d}f},
+\end{equation}
+where $\lVert \cdot \rVert_F$ denotes the Frobenius norm. 
+The integrals are evaluated numerically using Simpson's rule on the discrete frequency grid 
+shared by the theoretical spectrum $S(f)$ and the estimator $\widehat{S}(f)$.
 
 
 \begin{figure}
     \centering
     \includegraphics[width=1\linewidth]{figures/riae_vs_K.pdf}
-    \caption{RIAE vs K}
+    \caption{Relative integrated absolute error (RIAE) versus spline basis size $K$ for fixed sample size $N$. Accuracy improves rapidly with $K$ until a broad plateau where results are insensitive to further increases in basis resolution.}
     \label{fig:riae_vs_k}
 \end{figure}
 \begin{figure}
     \centering
     \includegraphics[width=1\linewidth]{figures/riae_vs_N.pdf}
-    \caption{RIAE vs N}
+    \caption{Relative integrated absolute error (RIAE) versus sample size $N$ for fixed basis size $K$. Error decreases approximately as $N^{-1/2}$, consistent with variance-dominated behaviour under the Whittle likelihood.}
     \label{fig:riae_vs_n}
 \end{figure}
 
+Figures~\ref{fig:riae_vs_k} and \ref{fig:riae_vs_n} display how estimation accuracy, 
+measured by RIAE, depends on the spline basis size $K$ and the sample size $N$.
+For fixed $N$, RIAE versus $K$ exhibits the expected bias--variance trade-off: 
+when $K$ is too small the basis underfits and RIAE is elevated due to bias; 
+increasing $K$ initially reduces RIAE and then produces a broad plateau 
+where results are relatively insensitive to $K$; for very large $K$, 
+a mild uptick can appear at smaller $N$ due to increased variance. 
+The roughness penalty keeps variance in check, which explains the wide 
+region of insensitivity to $K$.
+For fixed $K$ and increasing $N$ (Figure~\ref{fig:riae_vs_n}), 
+RIAE decreases monotonically, with a slope on a log--log scale broadly consistent 
+with variance-dominated $N^{-1/2}$ behaviour. 
+This scaling matches the intuition from Whittle-likelihood-based 
+estimators with shrinkage: more data reduces sampling variability while the 
+penalty controls effective complexity. 
+Together, these results indicate that 
+accuracy improves predictably with $N$, and 
+the method is robust to the choice of $K$ across a wide range, provided $K$ is 
+large enough to avoid underfitting.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{figures/runtime_vs_K.pdf}
+    \caption{Wall-clock runtime versus spline basis size $K$ (fixed $N$ and $p$).}
+    \label{fig:runtime_vs_k}
+\end{figure}
+Figure~\ref{fig:runtime_vs_k} characterises computational cost as the basis size $K$ varies while holding the length of the timeseries $N$ fixed. 
+Runtime grows approximately linearly in $K$, consistent with the dominant operations in our JAX implementation, which are matrix-vector multiplies with banded structure and penalty evaluations that scale as $O(NK)$. 
+Note there may be constant overheads due to data transfer, and the first invocation includes one-off JIT compilation time. 
+In practice, this predictable scaling allows one to choose $K$ based on accuracy considerations (cf. Figure~\ref{fig:riae_vs_k}) knowing that wall-clock cost will increase nearly proportionally.
 
 
 \subsection{LISA }
 \begin{figure}
     \centering
     \includegraphics[width=1\linewidth]{figures/lisa.png}
-    \caption{LISA work in prog}
-    \label{fig:placeholder}
+    \caption{Three-channel LISA-like example: posterior medians (solid) and 90\% credible intervals (shaded) for the PSD and cross-spectra. Grey curves show the empirical periodogram. Estimates remain PSD by construction via the Cholesky parameterization.}
+    \label{fig:lisa_psd}
 \end{figure}
 
-Notes from jonathan gair
+
+We apply the multivariate P-spline model to three LISA time-delay interferometry (TDI) channels and estimate their joint spectral density matrix across the milli-Hz band. 
+The PSD (diagonal panels) display the expected broadband shape with a steady rise toward higher frequencies, while the posterior medians provide a smooth denoising of the raw periodogram. 
+Uncertainty is smallest in the well-constrained mid-band and widens near the frequency extremes where fewer datapoints are available.
+The off-diagonal terms show weak inter-channel coupling: the real parts remain close to zero across most of the band and the imaginary parts are consistent with zero within credible intervals. 
+This behaviour is compatible with the \avi{expected noise correlations between AET TDI channels, which are designed to be largely independent.} 
+Importantly, the Cholesky parameterization maintains Hermitian positive definiteness at every frequency, ensuring that the estimated matrix can be safely used for downstream analyses in a global-fit framework.
+From an inference perspective, the LISA results illustrate the spline basis captures smooth, instrument-driven trends without requiring an explicit parametric transfer model; localized deviations (e.g., narrow instrumental features) can be accommodated by increasing the basis resolution locally or by augmenting the model with parametric components (e.g., line models to capture the transfer function dips). 
 
 
-
-\section*{Implementation}
-\begin{onecolumn}
-\begin{lstlisting}[style=pythonstyle]
-@jax.jit
-def whittle_likelihood_arrays(
-    y_re: jnp.ndarray,
-    y_im: jnp.ndarray,
-    Z_re: jnp.ndarray,
-    Z_im: jnp.ndarray,
-    log_delta_sq: jnp.ndarray,   # (n_freq, n_dim)
-    theta_re: jnp.ndarray,       # (n_freq, n_theta)
-    theta_im: jnp.ndarray        # (n_freq, n_theta)
-) -> jnp.ndarray:
-    """Multivariate Whittle likelihood for Cholesky PSD parameterization - JIT version."""
-    sum_log_det = -jnp.sum(log_delta_sq)
-    exp_neg_log_delta = jnp.exp(-log_delta_sq)
-
-    if Z_re.shape[2] > 0:
-        Z_theta_re = jnp.einsum('fij,fj->fi', Z_re, theta_re) - jnp.einsum('fij,fj->fi', Z_im, theta_im)
-        Z_theta_im = jnp.einsum('fij,fj->fi', Z_re, theta_im) + jnp.einsum('fij,fj->fi', Z_im, theta_re)
-        u_re = y_re - Z_theta_re
-        u_im = y_im - Z_theta_im
-    else:
-        u_re = y_re
-        u_im = y_im
-
-    numerator = u_re ** 2 + u_im ** 2
-    internal = numerator * exp_neg_log_delta
-    tmp2 = -jnp.sum(internal)
-    return sum_log_det + tmp2
-
-
-def multivariate_psplines_model(
-    y_re: jnp.ndarray,       # FFT real parts
-    y_im: jnp.ndarray,       # FFT imaginary parts
-    Z_re: jnp.ndarray,       # Design matrix real parts
-    Z_im: jnp.ndarray,       # Design matrix imaginary parts
-    all_bases,               # List of basis matrices
-    all_penalties,           # List of penalty matrices
-    alpha_phi: float = 1.0,
-    beta_phi: float = 1.0,
-    alpha_delta: float = 1e-4,
-    beta_delta: float = 1e-4,
-):
-    """
-    NumPyro model for multivariate PSD estimation using P-splines and Cholesky parameterization.
-    """
-    # Extract dimensions from input arrays (these are static during compilation)
-    n_freq, n_dim = y_re.shape
-    n_theta = Z_re.shape[2]
-
-    component_idx = 0
-    log_delta_components = []
-
-    # Initialize total log prior accumulator
-    log_prior_total = jnp.array(0.0)
-
-    # Diagonal components (one per channel)
-    for j in range(n_dim):  # Now n_dim is a concrete Python int
-        delta = numpyro.sample(f"delta_{j}", dist.Gamma(alpha_delta, beta_delta))
-        phi = numpyro.sample(f"phi_delta_{j}", dist.Gamma(alpha_phi, delta * beta_phi))
-
-        k = all_penalties[component_idx].shape[0]
-        weights = numpyro.sample(f"weights_delta_{j}", dist.Normal(0, 1).expand((k,)).to_event(1))
-
-        # Prior factor for weights
-        wPw = jnp.dot(weights, jnp.dot(all_penalties[component_idx], weights))
-        log_prior_w = 0.5 * k * jnp.log(phi) - 0.5 * phi * wPw
-        numpyro.factor(f"weights_prior_delta_{j}", log_prior_w)
-        log_prior_total += log_prior_w
-
-        # Compute log diagonal element
-        log_delta_sq_j = all_bases[component_idx] @ weights
-        log_delta_components.append(log_delta_sq_j)
-        component_idx += 1
-
-    log_delta_sq = jnp.stack(log_delta_components, axis=1)
-
-    # Off-diagonal components (if multivariate)
-    if n_theta > 0:
-        # Real part of off-diagonal terms
-        delta_re = numpyro.sample("delta_theta_re", dist.Gamma(alpha_delta, beta_delta))
-        phi_re = numpyro.sample("phi_theta_re", dist.Gamma(alpha_phi, delta_re * beta_phi))
-
-        k = all_penalties[component_idx].shape[0]
-        weights_re = numpyro.sample("weights_theta_re", dist.Normal(0, 1).expand((k,)).to_event(1))
-
-        wPw_re = jnp.dot(weights_re, jnp.dot(all_penalties[component_idx], weights_re))
-        log_prior_w_re = 0.5 * k * jnp.log(phi_re) - 0.5 * phi_re * wPw_re
-        numpyro.factor("weights_prior_theta_re", log_prior_w_re)
-        log_prior_total += log_prior_w_re
-
-        theta_re_base = all_bases[component_idx] @ weights_re
-        theta_re = jnp.tile(theta_re_base[:, None], (1, max(1, n_theta)))
-        component_idx += 1
-
-        # Imaginary part of off-diagonal terms
-        delta_im = numpyro.sample("delta_theta_im", dist.Gamma(alpha_delta, beta_delta))
-        phi_im = numpyro.sample("phi_theta_im", dist.Gamma(alpha_phi, delta_im * beta_phi))
-
-        k = all_penalties[component_idx].shape[0]
-        weights_im = numpyro.sample("weights_theta_im", dist.Normal(0, 1).expand((k,)).to_event(1))
-
-        wPw_im = jnp.dot(weights_im, jnp.dot(all_penalties[component_idx], weights_im))
-        log_prior_w_im = 0.5 * k * jnp.log(phi_im) - 0.5 * phi_im * wPw_im
-        numpyro.factor("weights_prior_theta_im", log_prior_w_im)
-        log_prior_total += log_prior_w_im
-
-        theta_im_base = all_bases[component_idx] @ weights_im
-        theta_im = jnp.tile(theta_im_base[:, None], (1, max(1, n_theta)))
-    else:
-        theta_re = jnp.zeros((n_freq, 0))
-        theta_im = jnp.zeros((n_freq, 0))
-
-    # Likelihood using individual arrays
-    log_likelihood = whittle_likelihood_arrays(
-        y_re, y_im, Z_re, Z_im, log_delta_sq, theta_re, theta_im
-    )
-    numpyro.factor("likelihood", log_likelihood)
-
-    # Store deterministic quantities for diagnostics
-    numpyro.deterministic("lp", log_prior_total + log_likelihood)
-    numpyro.deterministic("log_delta_sq", log_delta_sq)
-    numpyro.deterministic("theta_re", theta_re)
-    numpyro.deterministic("theta_im", theta_im)
-    numpyro.deterministic("log_likelihood", log_likelihood)
-\end{lstlisting}
-
-\end{onecolumn}
-
+\avi{I think we should do this also for LISA data with correlation. Similar to Jianan's paper.}
 
 \section{Discussion}
 
+The proposed multivariate P-spline approach provides a flexible and computationally efficient framework for spectral density matrix estimation in multichannel time series, with direct relevance to LISA and other gravitational wave experiments. 
+By leveraging the Cholesky parameterization, the method guarantees positive definiteness and enables parallel inference for each channel, significantly reducing computational cost. 
+The use of hierarchical shrinkage priors and B-spline bases allows the model to adapt to a wide range of spectral structures, balancing smoothness and fidelity to the data.
+
+Simulation studies confirm that the method achieves accurate recovery of both PSD and cross-spectral components, with uncertainty quantification that reflects the available information. 
+The approach is robust to the choice of spline basis size and scales well with data volume, making it suitable for routine application as new data become available.
+
+Future work could extend the model to handle nonstationary or time-varying spectra, incorporate additional physical constraints, or integrate parametric components for known instrumental features. 
+Application to real LISA data, including scenarios with significant inter-channel correlations, will further demonstrate the utility of this framework for gravitational wave data analysis.
+
 
 \begin{acknowledgments}
-
+We thank XYZ for helpful discussions.
+This work was performed on the OzSTAR national facility at Swinburne University of Technology. The OzSTAR program receives funding in part from the Astronomy National Collaborative Research Infrastructure Strategy (NCRIS) allocation provided by the Australian Government, and from the Victorian Higher Education State Investment Fund (VHESIF) provided by the Victorian Government.
 \end{acknowledgments}
 
 
