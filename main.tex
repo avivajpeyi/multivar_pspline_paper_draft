@@ -64,7 +64,7 @@ LISA will provide three correlated data streams from time-delay interferometry c
 Accurate characterization of the noise spectral density matrix $\mathbf{S}(f)$ is essential for optimal signal detection and parameter estimation in this multivariate setting.
 
 LISA data exhibits several characteristics that challenge conventional spectral estimation methods: frequency-dependent cross-correlations between channels, non-stationary noise properties due to orbital motion, and overlapping astrophysical signals across the millihertz band. 
-Our approach addresses these challenges by modeling the full spectral density matrix with smooth, frequency-varying P-splines under a Cholesky parameterization that guarantees Hermitian positive definiteness at every frequency. 
+Our approach addresses some of these challenges by modeling the full spectral density matrix with smooth, frequency-varying P-splines under a Cholesky parameterization that guarantees Hermitian positive definiteness at every frequency. 
 A hierarchical shrinkage prior provides automatic regularization.
 Inference uses the Whittle likelihood with No-U-Turn sampling (NUTS) for MCMC.
 
@@ -72,7 +72,7 @@ The estimated spectral density matrices serve multiple roles in LISA data analys
 They provide noise weighting for matched filtering operations and support background characterization for targeted source analyses. 
 The Bayesian framework naturally propagates spectral uncertainties to downstream global-fit parameter estimation procedures.
 Integration with LISA's global analysis pipeline requires spectral estimates across multiple time scales, from hourly monitoring to months-long campaigns. 
-The computational footprint for this method is predictable: for a fixed number of channels, the dominant operations scale approximately as $O(NK)$ with the length of the timeseries $N$ and spline basis size $K$, enabling routine re-estimation as data accumulates.
+The computational footprint for this method is predictable: for a fixed number of channels, the dominant operations scale approximately as $O(nK)$ with the length of the timeseries $n$ and spline basis size $K$, enabling routine re-estimation as data accumulates.
 
 Implementation of this methodology is expected to improve LISA's detection sensitivity through more accurate noise characterization and reduce systematic errors in parameter estimation by properly accounting for inter-channel correlations. 
 These improvements directly impact LISA's primary science objectives, including the detection of massive black hole mergers, galactic binary systems, and potential primordial gravitational wave backgrounds.
@@ -179,6 +179,15 @@ This hierarchical structure allows each spectral component to have its own degre
 
 The posterior distribution can be sampled using MCMC methods, with the Cholesky parameterization ensuring positive definiteness of the spectral density matrix throughout the sampling process.
 In our implementation, we use the No-U-Turn Sampler (NUTS) algorithm, which is well-suited for high-dimensional parameter spaces and efficiently explores the posterior distribution.
+
+\section{Implementation details}
+\avi{Just putting some notes here for tricks i had to use to help the NUTS}
+
+phi reparameterisation to avoid tunnelling,
+use of float32 after rescaling, use VI for initialsation
+
+
+
 
 \section{\label{sec:application}Application}
 
