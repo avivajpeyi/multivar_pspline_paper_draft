@@ -52,7 +52,7 @@ On synthetic VAR(2) benchmarks with known ground truth, the method accurately re
 We illustrate relevance to LISA by estimating the multichannel noise spectral matrix for time-delay interferometry combinations.
 \end{abstract}
 
-\keywords{gravitational waves, CSD estimation, P-splines, LISA}
+\keywords{gravitational waves, PSD estimation, CSD estimation, P-splines, LISA}
 
 \maketitle
 
@@ -175,16 +175,139 @@ We place hierarchical priors on the spline coefficients to enforce smoothness wh
 \end{align}
 where $\bold{w}_j$ represents the vector of spline coefficients for component $j$, $\bold{P}_j$ is the penalty matrix enforcing smoothness (typically a second or third-order difference matrix), and $\phi_j$, $\delta_j$ are precision parameters that control the amount of smoothing.
 
-This hierarchical structure allows each spectral component to have its own degree of smoothness, automatically adapting to the underlying spectral characteristics. The penalty matrices $\bold{P}_j$ are constructed from finite differences of the spline coefficients, penalizing rapid changes and promoting smooth spectral estimates.
+This hierarchical structure allows each spectral component to have its own degree of smoothness, automatically adapting to the underlying spectral characteristics. 
+The penalty matrices $\bold{P}_j$ are constructed from finite differences of the spline coefficients, penalizing rapid changes and promoting smooth spectral estimates.
 
 The posterior distribution can be sampled using MCMC methods, with the Cholesky parameterization ensuring positive definiteness of the spectral density matrix throughout the sampling process.
 In our implementation, we use the No-U-Turn Sampler (NUTS) algorithm, which is well-suited for high-dimensional parameter spaces and efficiently explores the posterior distribution.
 
-\section{Implementation details}
-\avi{Just putting some notes here for tricks i had to use to help the NUTS}
 
-phi reparameterisation to avoid tunnelling,
-use of float32 after rescaling, use VI for initialsation
+\subsection{Coarse-graining the frequency grid}
+\label{subsec:coarse}
+
+Large data stretches or high sampling rates produce very fine frequency grids, for which a fully resolved Whittle analysis can be unnecessarily expensive in regions where the spectrum varies slowly. 
+We therefore use a coarse--graining strategy that preserves the Whittle likelihood while reducing the number of frequency evaluations. 
+Building off \citet{SGWBinner}, the key idea is to aggregate neighbouring Fourier ordinates into logarithmically spaced bins at high frequency, and to evaluate the model only at one representative frequency per bin, weighting the bin's contribution by the number of member frequencies. 
+We keep the low--frequency region unchanged to retain resolution where the spectrum typically has fewer data.
+
+\paragraph*{Univariate case.} \avi{Just to help us discuss}
+
+Let ${f_k}{k=1}^N$ be the original Fourier grid and $\mathbf d(f_k)=(d_1,\dots,d_p)^\top$ the complex DFT vector. 
+Below a transition $f\mathrm{tr}$ we keep every frequency (full resolution). 
+Above $f_\mathrm{tr}$ we partition the grid into logarithmically spaced bins $b=1,\dots,B$ with representative frequency $\bar f_b$ and cardinality $K_b=#{k\in b}$.
+
+Let $\{f_k\}$ denote the original Fourier grid and $I(f_k)$ the (one--sided) periodogram. 
+For a bin $b$ with representative frequency $\bar f_b$ and cardinality $K_b$, the univariate Whittle contribution 
+$\sum_{k\in b}\bigl\{\log S(f_k) + I(f_k)/S(f_k)\bigr\}$ is well approximated by
+\begin{equation}
+\label{eq:coarse_univar}
+K_b\,\log S(\bar f_b)\; +\; K_b\, \frac{\bar I_b}{S(\bar f_b)}\,,\qquad \bar I_b\equiv \frac{1}{K_b}\sum_{k\in b} I(f_k)\, ,
+\end{equation}
+provided $S(f)$ varies slowly across the bin. 
+This leads to a coarse grid $\{\bar f_b\}$ with weights $K_b$ and bin--mean periodogram $\bar I_b$. 
+In practice, we keep frequencies below a transition $f_\mathrm{tr}$ unchanged, and build $\log$--spaced bins above $f_\mathrm{tr}$. 
+This reduces cost roughly in proportion to the ratio of fine to coarse grid sizes, by using an approximate Whittle--likelihood, evaluated on a reduced grid.
+
+The full form of the likelihood with the frequency weighting is
+\begin{align}
+    \mathcal{L}(\d|\S)
+    \propto \prod_{b=1}^{B} \det(\S(\bar f_b))^{-K_b} \times 
+     \exp\left(-\frac{K_b}{T}\bar{\d}(f_b)^* \S(\bar f_b)^{-1} \bar{\d}(f_b)\right),
+\end{align}
+where $\bar{\d}(f_b)$ is the DFT vector at the representative frequency $\bar f_b$ and $B$ is the total number of bins. 
+This coarse Whittle likelihood is exact if $S(f)$ is constant within each bin, and remains accurate for smooth spectra that do not vary too rapidly within bins.
+
+
+
+\paragraph*{Multivariate (Cholesky) case.} 
+For the multivariate Whittle likelihood written in the Cholesky form (Sec.~\ref{sec:intro}), a naive average of the complex DFT vectors inside a bin is \\emph{not} sufficient, 
+because the quadratic term depends on second--order products $\mathbf d(f_k)\mathbf d(f_k)^\mathrm{H}$. 
+This means we cant simply replace $\mathbf d(f_k)$ with a bin--averaged $\bar{\mathbf d}(f_b)$, as  we did in the univariate case, as this will lead to errors in the cross--spectral terms
+To retain exactness at the bin level while evaluating the model at a single frequency per bin, we aggregate the \emph{bin sufficient statistics}.
+
+For channel (row) $j$ and bin $b$ with members $k\in b$, define
+\begin{align}
+\label{eq:coarse_stats}
+c_j(b) &= \sum_{k\in b} |d_j(f_k)|^2\,, & v_{j\ell}(b) &= \sum_{k\in b} d_j(f_k)\, d_\ell(f_k)^{\!*}\quad (\ell<j)\,,\\
+G_{j\ell m}(b) &= \sum_{k\in b} d_\ell(f_k)\, d_m(f_k)^{\!*}\quad (\ell,m<j)\, , && K_b = \#\{k\in b\}\, .
+\end{align}
+Let $\theta_j(\bar f_b)\in\mathbb C^{j-1}$ be the vector of off--diagonal Cholesky coefficients for row $j$ evaluated at the representative frequency $\bar f_b$, and let $\delta_j(\bar f_b)^2$ be the corresponding diagonal variance. The exact bin contribution to the row--$j$ Whittle log--likelihood is then
+\begin{equation}
+\label{eq:coarse_block}
+K_b\,\log \delta_j(\bar f_b)^2\; +\; \delta_j(\bar f_b)^{-2}\, \Bigl(\theta_j^{\!\mathrm H} G_j(b)\, \theta_j - 2\,\Re\{\theta_j^{\!\mathrm H} v_j(b)\} + c_j(b)\Bigr)\, .
+\end{equation}
+Summing \eqref{eq:coarse_block} over bins and rows recovers the full Whittle objective in terms of per--bin sufficient statistics and a coarse evaluation grid $\{\bar f_b\}$. In other words, we trade $O(N)$ pointwise evaluations for $O(B)$ bin evaluations (with $B\ll N$) \emph{without} discarding within--bin residual energy.
+
+V2
+
+
+Instead of averaging the DFT vectors, we precompute per–bin sufficient statistics that enter the Cholesky‑row likelihood.
+
+\paragraph*{Bin sufficient statistics (row $j$).}
+For a bin $b$ and row $j$ define
+\begin{align}
+c_j(b) &:= \sum_{k\in b} |d_j(f_k)|^2, \
+v_{j\ell}(b) &:= \sum_{k\in b} d_j(f_k), d_\ell(f_k)^{!}\quad(\ell<j), \
+G_{j\ell m}(b) &:= \sum_{k\in b} d_\ell(f_k), d_m(f_k)^{!}\quad(\ell,m<j),
+\end{align}
+so $c_j$ is a scalar, $v_j\in\mathbb C^{j-1}$, and $G_j\in\mathbb C^{(j-1)\times(j-1)}$ is Hermitian. These are just the frequency–summed cross–products that appear in the quadratic form of the Whittle likelihood. They can be accumulated in one pass over the high‑frequency DFTs.
+
+\paragraph*{Bin contribution to the row likelihood.}
+Let $\theta_j(\bar f_b)\in\mathbb C^{j-1}$ be the vector of off‑diagonal Cholesky coefficients for row $j$ evaluated at $\bar f_b$, and let $\delta_j(\bar f_b)^2$ be the corresponding diagonal variance. The row‑$j$ Whittle contribution of bin $b$ is
+\begin{equation}
+\label{eq:bin_ll_row}
+K_b,\log\delta_j(\bar f_b)^2;+;\delta_j(\bar f_b)^{-2},\Bigl(\theta_j^{!H} G_j(b),\theta_j;-;2,\Re{\theta_j^{!H} v_j(b)};+;c_j(b)\Bigr).
+\end{equation}
+Summing \eqref{eq:bin_ll_row} over bins and rows yields the coarse‑grained objective. Intuitively, we evaluate the spline fields $(\log\delta_j^2, \Re\theta_{j\ell}, \Im\theta_{j\ell})$ once per bin (at $\bar f_b$), and we reuse the exact within–bin residual energy captured by $(c,v,G)$. This keeps the quadratic term faithful to the original sum; the $\sum_{k\in b}\log\delta_j(f_k)^2$ part is approximated by $K_b\log\delta_j(\bar f_b)^2$, which is accurate when $\delta_j(f)$ varies smoothly over the bin. In practice we keep bins narrow enough (log spacing) that this approximation is negligible at high frequencies.
+
+
+The quadratic part of the Whittle objective at high frequency is exactly preserved by the bin statistics. Only the sum of $\log\delta_j^2$ terms is approximated by replacing ${\delta_j(f_k)}_{k\in b}$ with $\delta_j(\bar f_b)$; because the diagonal fields are spline‑smooth and bins are narrow on a log scale, hopefully this bias is negligible in the intended regime (smooth high‑frequency noise). Low‑frequency points  remain unbinned.
+
+
+\paragraph*{Implementation details } 
+We (i) retain all frequencies below a user--chosen transition $f_\mathrm{tr}$, (ii) partition $[f_\mathrm{tr}, f_\max]$ into logarithmically spaced bins, (iii) precompute $K_b$ and the sufficient statistics \eqref{eq:coarse_stats} for each bin, and (iv) evaluate the spline fields $\log\delta_j^2(f)$ and $\theta_{j\ell}(f)$ at $\bar f_b$. The coarse likelihood is obtained by replacing the per--frequency sum with a per--bin sum, weighting the log--determinant terms by $K_b$ and using \eqref{eq:coarse_univar} or \eqref{eq:coarse_block} for the quadratic terms. 
+Low--frequency points use $K_b\!=\!1$ and are unchanged.
+
+This model allows us to use a approximate log-likelihood while accelerating inference in smooth, high--frequency regions. 
+It also integrates well with our P--spline implementation: basis functions are evaluated at the coarse grid (on the same normalized domain), the hierarchical priors are unchanged, and the sampler only sees fewer frequency rows. 
+Diagnostics and plots reconstruct periodograms and cross--spectra from the aggregated cross--spectral sums divided by $K_b$, ensuring visually consistent comparisons between the full and coarse analyses.
+
+\paragraph*{Computational complexity.}
+Let $N$ be the number of fine frequencies and $B$ the total number of coarse elements ($B=N_\mathrm{low}+N_\mathrm{bins}$). 
+The cost of precomputing bin statistics is $O(N p^2)$ (one pass over the DFTs). 
+After that, each likelihood evaluation scales like the unbinned case with $N$ replaced by $B$, i.e. roughly $O(B,p^2)$ for the quadratic forms plus the cost of evaluating the spline fields (which scales like $O(B K)$ per parameter family, with $K$ the number of basis functions). 
+For typical settings $B\ll N$, so runtime is reduced by a factor $\approx N/B$ while keeping the same likelihood structure.
+
+
+\section{Computation}
+
+\avi{Again, these are just some notes -- dont expect to include this in the final draft, more just for Reante and Patricio to understand what I did}
+
+THe params to be sampled are the spline weights for the diagonal fields log $\delta_j(f)^2$ and the real/imaginary off‑diagonal Cholesky entries $\theta_{jl}(f)$, plus their hierarchical hyperparameters.
+
+We implement the model in JAX to leverage automatic differentiation and just-in-time (JIT) compilation for efficient gradient-based sampling.
+We use the NumPyro library, which provides a flexible framework for probabilistic programming and supports advanced MCMC algorithms.
+To improve sampling efficiency, we reparameterize the precision parameters $\phi_j$ using a log transformation to avoid issues with sampling near zero \avi{This was suggested in the NumPyro docs -- something to do with gradients being unstable near zero?}. 
+We also standardize the frequency grid to the unit interval $[0,1]$ to improve numerical stability when evaluating the B-spline basis functions.
+
+To initialise the MCMC chains, we use a two-step approach: first, we run a short stochastic variational inference (SVI) procedure to obtain approximate posterior means for the spline coefficients and precision parameters; second, we use these means to set the initial values for the NUTS sampler.
+
+For the VI step, we employ stochastic variational inference (SVI) with a mean-field Gaussian approximation to the posterior.
+The variational inference step uses the Adam optimizer with a learning rate of $10^{-3}$ and runs for 2000 iterations, which we found sufficient to converge to a reasonable approximation of the posterior. 
+SVI quickly finds a good mode and a sensible local scale for each weight, which is exactly what NUTS needs for a stable warm start and a good mass matrix.
+Note that SVI are prone to underestimating marginal variance and ignoring posterior correlations among spline weights and across the hierarchical levels. 
+Reverse‑KL is mode‑seeking and can miss skew/tail mass. 
+In multivariate/Cholesky models these effects are amplified by XYZ. 
+In our experiments the SVI posterior bands are typically too narrow, while NUTS corrects this and improves tail calibration without large extra cost
+(because SVI has already placed us near the right region -- burnin is much shorter than a cold start).
+
+
+
+We use the No-U-Turn Sampler (NUTS) algorithm for MCMC, which is well-suited for high-dimensional parameter spaces and efficiently explores the posterior distribution.
+We monitor convergence using the potential scale reduction factor (R-hat) and effective sample size (ESS) diagnostics provided by NumPyro.
+We also use trace plots and autocorrelation plots to visually assess the mixing and convergence of the MCMC chains.
+
+
 
 
 
