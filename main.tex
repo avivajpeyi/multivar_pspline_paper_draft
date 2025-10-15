@@ -26,6 +26,7 @@
 \usepackage{bm}% bold math
 \usepackage{hyperref}% add hypertext capabilities
 \usepackage{xcolor}
+\usepackage{verbatim}
 
 
 \input{custom_commands}
@@ -83,7 +84,7 @@ These improvements directly impact LISA's primary science objectives, including 
 
 \subsection{Likelihood}
 Assume we are given a time series of gravitational wave observations of length $n$ from $p$ channels. To set notation,
-let $\Z=(\Z_1,\ldots,\Z_n)^\intercal\in  \mathbb{R}^{n\times p}$ be a $p$-dimensional stationary, mean-zero time series, sampled at time intervals $\Delta_t=1/(2f_{Ny})$, i.e., $\Z_\ell=\Z(\ell\Delta_t)\in \mathbb{R}^p$ for $l=1,\ldots,n$, where $f_{Ny}$ is the Nyquist frequency, for a total observation time of $T$ with a total of $n=T/\Delta_t$ sampled values for each of the $p$ dimensions. The frequency resolution, \(\Delta_f\), is given by
+let $\Z=(\Z_1,\ldots,\Z_n)^\intercal\in  \mathbb{R}^{n\times p}$ be a $p$-dimensional stationary, mean-zero time series, sampled at time intervals $\Delta_t=1/(2f_{Ny})$, i.e., $\Z_\nu=\Z(\nu\Delta_t)\in \mathbb{R}^p$ for $l=1,\ldots,n$, where $f_{Ny}$ is the Nyquist frequency, for a total observation time of $T$ with a total of $n=T/\Delta_t$ sampled values for each of the $p$ dimensions. The frequency resolution, \(\Delta_f\), is given by
 \begin{align}
 \Delta_f = \frac{1}{n \Delta_t} = \frac{1}{T}\, .
 \end{align}
@@ -96,67 +97,325 @@ where $f_k= k \Delta_f= k/({n\Delta_t})=k /{T}$ for $k=1,\ldots, N$, and $N = n/
 For stationary time series with absolutely summable autocovariances, i.e., $\sum_{h=1}^\infty\gamma_{lm}(h)<\infty$, the discrete Fourier coefficients $\d(f_k)$ %(multiplied by $1 / \sqrt{n}$)
 are asymptotically independent and have a complex Gaussian distribution with mean zero and  covariance matrix $T\, \S(f_k)$ with  the continuous two-sided spectral density matrix 
 \[\S(f)=\frac{1}{2f_{Ny}}
-\sum_{\ell=-\infty}^{\infty} \Gamma(\ell \Delta_t) \exp \left(-2\pi i f \ell\Delta_t \right),\] %
+\sum_{\nu=-\infty}^{\infty} \Gamma(\nu \Delta_t) \exp \left(-2\pi i f \nu\Delta_t \right),\] %
 the Fourier transform of the time-invariant autocovariance function $\Gamma(h)=\left( \gamma_{lm}(h)\right)=\mathbb{E}(\Z_{t}\Z_{t+h}^\intercal)$ that in turn defines the Toeplitz covariance matrix of $\Z$. This asymptotic Gaussian distribution is the basis of the multivariate Whittle likelihood approximation in the frequency domain, expressed as ...
 
 
-The multivariate log-Whittle likelihood is given by
+The multivariate Whittle likelihood is given by
 \begin{align}\label{eq:Whittle likelihood}
  \mathcal{L}(\d|\S) &\propto  \prod_{k=1}^{N} \det(\S(f_k))^{-1} \times \nonumber \\
  & \exp\left(-\frac{1}{T}\d(f_k)^* \S(f_k)^{-1} \d(f_k)\right),
 \end{align}
 where $\d(f_k)^*$ is the conjugate transpose of the $\d(f_k)$ and $\S(f_k)$ is a $p \times p$ Hermitian positive semidefinite spectral density matrix at each $f_k$. 
 
+ We divide the time series into $N_{b}$ equal-sized blocks $\Z=(\Z^{(1)},\ldots,\Z^{(N_{b})})^\intercal $ with each block a $p$-dimensional time series each of length $n/N_{b}$. The discrete Fourier transform of each block is denoted by 
+$\d^{(i)}$, $i=1,\ldots,N_{b}$. 
+Assuming stationarity of the time series and independence among different blocks, the overall blocked likelihood is the product of the individual Whittle likelihoods of each block,
+\begin{equation}\label{eq:block_lnl}
+    \mathcal{L}_b(\d|\S) = \prod^{N_b}_{i=1} \mathcal{L}(\d^{(i)}|\S) \ .
+\end{equation}
+Now, the blocked Whittle likelihood can be simplified by using the  trace rotation rule to\\
+%for the product of  square matrices (where the trace of a matrix is the sum of its diagonal elements, i.e., $\textrm{tr}(A)=\sum_{i=1}^n a_{ii}$), namely 
+%$\tr(A B C)=\tr(BC A)=\tr(C A B)$. 
+$\mathcal{L}(\d^{(i)}|\S)$
+\begin{eqnarray*}
+&\propto & \prod_{k=1}^{N_l}   \left|\S(f_k)\right|^{-N_b}  
+  \exp\left(- \sum_{i=1}^{N_b}   \tr\left[\d^{(i)}(f_k)^* \S(f_k)^{-1} \d^{(i)}(f_k)\right]\right)\\
+  &\propto &  \prod_{k=1}^{N_l}    \left|\S(f_k)\right|^{-N_b}   
+  \exp\left(-   \tr\left[ \S(f_k)^{-1} \sum_{i=1}^{N_b} \underbrace{\d^{(i)}(f_k)\d^{(i)}(f_k)^*}_{\I^{(i)}(f_k)} \right]\right)\\ 
+   &\propto & \prod_{k=1}^{N_l}     \left|\S(f_k)\right|^{-N_b}   
+  \exp\left(-   \tr\left[ \S(f_k)^{-1} N_b\bar{\I}(f_k)\right]\right)\\
+   &\propto &  \prod_{k=1}^{N_l}    \left|\S(f_k)\right|^{-N_b}   
+  \exp\left(-   \tr\left[ \S(f_k)^{-1} \Y(f_k)\right]\right)
+\end{eqnarray*}
+where $\displaystyle \bar{\I}(f)=\frac{1}{N_b} \sum_{i=1}^{N_b} \I^{(i)}(f)$ is the block-averaged periodogram (or Welch estimate of the spectral density with non-overlapping blocks) of length $N_l=\frac{n}{2N_b}$ ,  $\I^{(i)}(f)=\d^{(i)}(f)\d^{(i)}(f)^*$ the periodogram matrix of the $i$th block at frequency $f$, and 
+$\Y(f)=N_b \bar{\I}(f)$.
+Therefore, $\Y(f)$ has a $d$-dimensional complex Wishart distribution\footnote{ We use the notation $\A \sim {\cal CW}_d(\M,m)$  if  the $d\times d$ Hermitian positive definite random matrix $\A$ has a complex Wishart distribution with mean $m\M$ and $m$ degrees of freedom. Its density is proportional to $\det(\M)^{-m}\exp(-\tr[\M^{-1}\A])$.} with $N_b$ degrees of freedom.
+This is consistent with the independent $d$-dimensional complex Wishart distribution with one degree of freedom for each individual periodogram, i.e.,
+\[\I^{(i)}(f_k)\sim {\cal CW}_d(\S(f_k),1). \]
+Using the eigendecomposition\\ $\Y(f_k)=\sum_{\nu=1}^p \lambda^{(k)}_\nu \v^{(k)}_\nu\v^{(k)*}_\nu=\sum_{\nu=1}^p  \u^{(k)}_\nu\u^{(k)*}_\nu$ with $\u^{(k)}_\nu=\sqrt{\lambda^{(k)}_l}\v^{(k)}_\nu$, 
+the likelihood function can be expressed as
+\begin{eqnarray}\label{eq:log-like}
+  &\propto &   \prod_{k=1}^{N_l} \left|\S(f_k)\right|^{-N_b} \exp\left(- \tr\left[ \S(f_k)^{-1} \Y(f_k)\right]\right)\\
+  &\propto &   \prod_{k=1}^{N_l} \left|\S(f_k)\right|^{-N_b} \exp\left(- \sum_{\nu=1}^p\u_\nu^{(k)*}\S(f_k)^{-1}\u_\nu^{(k)}\right)
+ % &\propto &  \prod_{k=1}^{N_l} \left|\S(f_k)\right|^{-N_b} \prod_{\nu=1}^p %\exp\left(-\u_\nu^{(k)*}\S(f_k)^{-1}\u_\nu^{(k)}\right)
+\end{eqnarray}
+
 
 \subsection{Parameterization using the Cholesky Decomposition}
-Following the approach of \citet{RosenOri2007Aeom,Hu2023}, we parameterize the inverse spectral density matrix using its Cholesky decomposition. Specifically, we write $\bold{S}(f_k)^{-1} = \bold{T}(f_k)^* \bold{D}(f_k)^{-1} \bold{T}(f_k)$, where $\bold{D}(f_k)$ is a diagonal matrix with positive diagonal elements $\delta_{1k}^2, \delta_{2k}^2, \ldots, \delta_{pk}^2$ and
+Following the approach of \citet{RosenOri2007Aeom,Hu2023}, we parameterize the inverse spectral density matrix using its Cholesky decomposition. Specifically, we write $\bold{S}(f_k)^{-1} = \bold{T}_k^* \bold{D}_k^{-1} \bold{T}_k$, where $\bold{D}_k$ is a diagonal matrix with positive diagonal elements $\delta_{1k}^2, \delta_{2k}^2, \ldots, \delta_{pk}^2$ and
 \begin{align}
-\bold{T}(f_k) = \begin{pmatrix}
+\bold{T}_k = \begin{pmatrix}
 1 & 0 & 0 & \cdots & 0 \\
--\theta_{21}(f_k) & 1 & 0 & \cdots & 0 \\
--\theta_{31}(f_k) & -\theta_{32}(f_k) & 1 & \ddots & \vdots \\
+-\theta_{21}^{(k)} & 1 & 0 & \cdots & 0 \\
+-\theta_{31}^{(k)} & -\theta_{32}^{(k)} & 1 & \ddots & \vdots \\
 \vdots & \vdots & \ddots & \ddots & 0 \\
--\theta_{p1}(f_k) & -\theta_{p2}(f_k) & \cdots & -\theta_{p,p-1}(f_k) & 1
+-\theta_{p1}^{(k)} & -\theta_{p2}^{(k)}& \cdots & -\theta_{p,p-1}^{(k)} & 1
 \end{pmatrix}
 \end{align}
-is a $p \times p$ complex unit lower triangular matrix with $\theta_{il}(f_k)$ representing the complex-valued off-diagonal elements for $i > l$.
+is a $p \times p$ complex unit lower triangular matrix with $\theta_{il}^{(k)}$ representing the complex-valued off-diagonal elements for $i > l$.
 
 
 This parameterization allows us to rewrite the likelihood as the product of $p$ likelihoods $\mathcal{L}_j$ parameterised by $\btheta_j,\bdelta_j$, for $j=1,\ldots,p$,
 \begin{align}
  \mathcal{L}(\d|\S)
- \propto \prod_{j=1}^{p} \mathcal{L}_j(\d_j,\d_{<j}|{\btheta_j,\bdelta_j}),
+ \propto \prod_{j=1}^{p} \mathcal{L}_j(\u_j,\u_{<j}|{\btheta_j,\bdelta_j}),
  \label{eq:likelihood}
 \end{align}
 where
 \begin{align}
-\mathcal{L}_j(&\d_j,\d_{<j}|\btheta_j,\bdelta_j) \propto \nonumber \\
-&  \prod_{k=1}^{N} \delta_{jk}^{-2} \exp \left(\frac{-\left|d_j(f_k)-\sum_{l=1}^{j-1}\theta_{jl}^{(k)}d_l(f_k) \right|^2}{T\delta_{jk}^2} \right)
+\mathcal{L}_j(&\u_j,\u_{<j}|\btheta_j,\bdelta_j) \propto \nonumber \\
+&  \prod_{k=1}^{N} \delta_{jk}^{-2N
+_b} \exp \left(\frac{-\sum_{\nu=1}^p\left|u_{j\nu}^{(k)}-\sum_{l=1}^{j-1}\theta_{jl}^{(k)}u_{l\nu}^{(k)} \right|^2}{T\delta_{jk}^2} \right)
 \label{eq:likelihoodj}
 \end{align}%
-and $\d_{<j}$ denotes the data of channels preceding the $j$th channel, the parameters $\btheta_j,\bdelta_j$ represent the set of $\theta_k$ and $\delta_k$ for the $j$th component of the multivariate time series, $\theta_{jl}^{(k)}$ represents the corresponding element in the matrix $T_k$ for any $j>l$, and $\theta_{jl}^{(k)} = 1$ when $j=l$, $d_j(f_k)$ denotes the Fourier coefficient of the $j$th component, and $\d_j=(d_j(f_1),\ldots,d_j(f_N))^\intercal$.
+and $\u_{<j}^{(k)}$ denotes the components of the vectors $\u_\nu^{(k)}$, $\nu=1,\ldots,p$, preceding the $j$th component, the parameters $\btheta_j,\bdelta_j$ represent the set of $\theta_k$ and $\delta_k$ for the $j$th component of the multivariate time series, $\theta_{jl}^{(k)}$ represents the corresponding element in the matrix $T_k$ for any $j>l$, and $\theta_{jl}^{(k)} = 1$ when $j=l$. %$d_j(f_k)$ denotes the Fourier coefficient of the $j$th component, and $\d_j=(d_j(f_1),\ldots,d_j(f_N))^\intercal$.
 Explicitly, if we have 3 channels as in the LISA case, we have 3 independent likelihoods ${\mathcal L}_j$ that depend on subvectors $\bdelta_1$, $(\bdelta_2,\btheta_{21})$, and $(\bdelta_3,\btheta_{31},\btheta_{32})$ of the total parameter vector:
 \begin{align}
-\mathcal{L}_1(&\d_1|\bdelta_1) \propto \nonumber \\
-&  \prod_{k=1}^{N} \delta_{1k}^{-2} \exp \left(\frac{-\left|d_1(f_k) \right|^2}{T\delta_{1k}^2} \right)
+\mathcal{L}_1(&\u_1|\bdelta_1) \propto \nonumber \\
+&  \prod_{k=1}^{N} \delta_{1k}^{-2N_b} \exp \left(\frac{-\sum_{\nu=1}^p\left|u_{1\nu}^{(k)}\right|^2}{T\delta_{1k}^2} \right)
 \label{eq:likelihood1}
 \end{align}%
 \begin{align}
-\mathcal{L}_2(&\d_1,\d_2|\btheta_{21},\bdelta_2) \propto \nonumber \\
-&  \prod_{k=1}^{N} \delta_{2k}^{-2} \exp \left(\frac{-\left|d_2(f_k)-\theta_{21}^{(k)}d_1(f_k) \right|^2}{T\delta_{2k}^2} \right)
+\mathcal{L}_2(&\u_1,\u_2|\btheta_{21},\bdelta_2) \propto \nonumber \\
+&  \prod_{k=1}^{N} \delta_{2k}^{-2N_b} \exp \left(\frac{-\sum_{\nu=1}^p\left|u_{2\nu}^{(k)}-\theta_{21}^{(k)}u_{1\nu}^{(k)} \right|^2}{T\delta_{2k}^2} \right)
 \label{eq:likelihood2}
 \end{align}%
 \begin{align}
-\mathcal{L}_3(&\d_1,\d_2,\d_3|\btheta_{31},\btheta_{32}\bdelta_3) \propto \nonumber \\
-&  \prod_{k=1}^{N} \delta_{3k}^{-2} \exp \left(\frac{-\left|d_3(f_k)-\theta_{31}^{(k)}d_1(f_k) -\theta_{32}^{(k)}d_2(f_k)\right|^2}{T\delta_{3k}^2} \right)
+\mathcal{L}_3(&\u_1,\u_2,\u_3|\btheta_{31},\btheta_{32},\bdelta_3) \propto \nonumber \\
+&  \prod_{k=1}^{N} \delta_{3k}^{-2N_b} \exp \left(\frac{-\sum_{\nu=1}^p\left|u_{3\nu}^{(k)}-\theta_{31}^{(k)}u_{1\nu}^{(k)} -\theta_{32}^{(k)}u_{2\nu}^{(k)}\right|^2}{T\delta_{3k}^2} \right)
 \label{eq:likelihood3}
 \end{align}%
 This means, we can run an MCMC chain for each posterior of $\bdelta_1$, $(\bdelta_2,\btheta_{21})$, and $(\bdelta_3,\btheta_{31},\btheta_{32})$ separately and in parallel which should reduce the computation time.
 
 
 
+
+\begin{table*}[htbp]
+\centering
+\caption*{\textbf{Notation reference}}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{>{\raggedright}p{3cm}p{11cm}}
+\toprule
+\textbf{Symbol} & \textbf{Meaning / Definition} \\ 
+\midrule
+$\mathbf{Z}_t \in \mathbb{R}^p$ 
+  & $p$-dimensional zero-mean stationary time series observed at discrete times $t=1,\ldots,n$. \\
+
+$\Delta_t = 1/(2f_{\mathrm{Ny}})$ 
+  & Sampling interval; $f_{\mathrm{Ny}}$ is the Nyquist frequency, with sampling rate $f_s = 1/\Delta_t = 2f_{\mathrm{Ny}}$. \\
+
+$T = n\Delta_t$ 
+  & Total duration of the observation. \\
+
+$f_k = k / T$ 
+  & Fourier frequencies for $k = 1,\ldots,N$, where $N = n/2$ if $n$ is even. \\
+
+$\Delta_f = 1/T$ 
+  & Frequency resolution of the discrete Fourier transform. \\
+
+$\mathbf{d}(f_k) = (d_1(f_k),\ldots,d_p(f_k))^\top$ 
+  & Complex Discrete Fourier Transform (DFT) vector of $\mathbf{Z}_t$ at frequency $f_k$. \\
+
+$d_j(f_k)$ 
+  & DFT coefficient for channel $j$ at frequency $f_k$. \\
+
+$\mathbf{S}(f_k) \in \mathbb{C}^{p\times p}$ 
+  & Cross-spectral density matrix at frequency $f_k$, Hermitian and positive semidefinite. \\
+
+$\mathbf{S}(f_k)^{-1} = \mathbf{T}(f_k)^{*}\mathbf{D}(f_k)^{-1}\mathbf{T}(f_k)$ 
+  & Cholesky parameterization of the inverse spectral density matrix. \\
+
+$\mathbf{T}(f_k)$ 
+  & Complex unit lower-triangular matrix with ones on the diagonal and off-diagonal elements $-\theta_{jl}(f_k)$ for $j>l$. \\
+
+$\mathbf{D}(f_k) = \mathrm{diag}(\delta_{1k}^2,\ldots,\delta_{pk}^2)$ 
+  & Diagonal matrix of positive real variances at frequency $f_k$. \\
+
+$\boldsymbol{\theta}_j(f_k) \in \mathbb{C}^{j-1}$ 
+  & Vector of off-diagonal Cholesky coefficients for row $j$ at frequency $f_k$. \\
+
+$\delta_j(f_k)^2$ 
+  & Diagonal element (variance) for row $j$ at frequency $f_k$. \\
+
+$\mathcal{L}(\mathbf{d}|\mathbf{S})$ 
+  & Multivariate Whittle likelihood of the DFT vector given the spectral density matrix $\mathbf{S}$. \\
+
+$c_j(b)$ 
+  & Bin-level sum of squared magnitudes for channel $j$: $\sum_{k\in b} |d_j(f_k)|^2$. \\
+
+$v_{j\nu}(b)$ 
+  & Cross-term between channels $j$ and $\nu$ within bin $b$: $\sum_{k\in b} d_j(f_k)d_\nu(f_k)^{*}$ for $\nu<j$. \\
+
+$G_{j\nu m}(b)$ 
+  & Cross-spectrum matrix term within bin $b$: $\sum_{k\in b} d_\nu(f_k)d_m(f_k)^{*}$ for $\nu,m<j$. \\
+
+$K_b = \#\{k\in b\}$ 
+  & Number of fine-grid frequencies contained in bin $b$. \\
+
+$\bar f_b$ 
+  & Representative (log-spaced) frequency of bin $b$. \\
+
+$\bar I_b$ 
+  & Bin-mean periodogram value, $\bar I_b = (1/K_b)\sum_{k\in b} I(f_k)$. \\
+
+$f_\mathrm{tr}$ 
+  & Transition frequency separating fine-resolution and coarse (binned) regimes. \\
+
+$N$ 
+  & Total number of fine-grid Fourier frequencies. \\
+
+$B$ 
+  & Total number of coarse bins ($B\ll N$). \\
+
+$p$ 
+  & Number of observed channels. \\
+
+$K$ 
+  & Number of spline basis functions per parameter family in the P-spline model. \\
+
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\subsection{(Renate's version)Coarse--graining the frequency grid}
+\label{subsec:coarse}
+Starting from equation (5), one could further coarse-grain' the frequencies by dividing the set of Fourier frequencies into $N_c$ disjoint subsets $J_h$, i.e., $\{f_1,\ldots,f_{N_l}\}=\cup_{h=1}^{N_c} J_h$, where each $J_h$ contains $N_h+1$ frequencies and $\bar{f}_h$ denotes the midpoint Fourier frequency of interval $J_h$.
+Instead of each individual $\Y(f_k), k=1,\ldots,N_l$, we use $\bar{\Y}_h=\sum_{f\in J_h} \Y(f)$, for $h=1,\ldots, N_c$. As the $\Y(f)$ are asymptotically independent and complex Wishart distributed, i.e., $\Y(f)\sim {\cal CW}(\S(f), N_b)$, the distribution of $\Y_h$ can be approximated by ${\cal CW}(\S(\bar{f}_h), N_b(N_h+1))$, but only under the assumption that the spectral density matrices $\S(f)$ for $f\in J_h$ are very close. (Note that the sum of independent complex Wishart distributions is complex Wishart but only if the scale matrices are identical. If they differ, the distribution can only  be characterised via its Laplace transform but does not have a closed-form density. [This is a mistake in Quentin's JCAP paper])
+So it is important to choose the length of the frequency intervals such that they don't contain peaks or abrupt changes of the spectrum.
+Then the likelihood in equation (\ref{eq:log-like}) can be approximated by
+\begin{eqnarray}\label{eq:log-like}
+  &\propto &   \prod_{h=1}^{N_c} \left|\S(\bar{f}_h)\right|^{-N_b(N_h+1)} \exp\left(- \tr\left[ \S(\bar{f}_h)^{-1} \bar{\Y}_h\right]\right)\\
+ % &\propto &   \prod_{k=1}^{N_l} \left|\S(f_k)\right|^{-N_b} \exp\left(- %\sum_{\nu=1}^p\u_\nu^{(k)*}\S(f_k)^{-1}\u_\nu^{(k)}\right)
+  &\propto &  \prod_{h=1}^{N_c} \left|\S(\bar{f}_h)\right|^{-N_b(N_h+1)}  \exp\left(\sum_{\nu=1}^p-\u_\nu^{(h)*}\S(\bar{f}_h)^{-1}\u_\nu^{(h)}\right)
+\end{eqnarray}
+where we use the eigendecomposition of $\bar{\Y}_h=\sum_{\nu=1}^p \lambda^{(h)}_\nu \v^{(h)}_\nu\v^{(h)*}_\nu=\sum_{\nu=1}^p  \u^{(h)}_\nu\u^{(h)*}_\nu$ with $\u^{(h)}_\nu=\sqrt{\lambda^{(h)}_l}\v^{(h)}_\nu$. 
+
+
+    
+
+\subsection{Coarse--graining the frequency grid}
+\label{subsec:coarse}
+
+For long data segments or high sampling rates, the Fourier grid $\{f_k\}_{k=1}^N$ can be extremely fine, making a full Whittle likelihood evaluation unnecessarily expensive in spectral regions where $\mathbf{S}(f)$ varies slowly. 
+We therefore adopt a \emph{coarse--graining} strategy that preserves the Whittle likelihood structure while reducing the number of frequency evaluations.
+
+Following \citet{Caprini_2019} (\textsc{SGWBINNER}), we aggregate neighbouring Fourier ordinates into logarithmically spaced bins at high frequencies and evaluate the model only at one representative frequency per bin. 
+Each bin’s contribution to the likelihood is weighted by its number of member frequencies. 
+The low--frequency region is left unbinned to retain resolution where the spectrum typically varies most rapidly.
+
+\paragraph*{Univariate case.}
+
+Let $\{f_k\}_{k=1}^N$ denote the original Fourier grid and $I(f_k)$ the (one--sided) periodogram. 
+Below a transition frequency $f_\mathrm{tr}$ we retain every frequency (full resolution). 
+Above $f_\mathrm{tr}$ we partition the grid into logarithmically spaced bins $b=1,\ldots,B$, each with representative frequency $\bar f_b$ and cardinality $K_b = \#\{k \in b\}$.
+
+For a smooth spectral density $S(f)$, the sum of Whittle contributions within bin $b$,
+\begin{equation}
+\sum_{k\in b}\!\left\{\log S(f_k) + \frac{I(f_k)}{S(f_k)}\right\},
+\end{equation}
+is well approximated by
+\begin{equation}
+\label{eq:coarse_univar}
+K_b \log S(\bar f_b)
+\;+\;
+K_b \frac{\bar I_b}{S(\bar f_b)}\,,
+\end{equation}
+where
+\begin{equation}
+\bar I_b
+\equiv
+\frac{1}{K_b}\sum_{k\in b} I(f_k)\,.
+\end{equation}
+
+This defines a coarse grid $\{\bar f_b\}$ with weights $K_b$ and bin--mean periodogram values $\bar I_b$. 
+Replacing the fine--grid sum by the coarsened version gives the approximate Whittle likelihood
+\begin{equation}
+\label{eq:coarse_univar_ll}
+\mathcal{L}(\mathbf{d}|\mathbf{S})
+\propto
+\prod_{b=1}^{B}
+\!
+\left[\det\mathbf{S}(\bar f_b)\right]^{-K_b}
+\exp\!\left(
+-\frac{K_b}{T}\,
+\mathbf{d}(\bar f_b)^{*}
+\mathbf{S}(\bar f_b)^{-1}
+\mathbf{d}(\bar f_b)
+\right),
+\end{equation}
+which is exact if $S(f)$ is constant within each bin, and remains accurate when $S(f)$ varies slowly across logarithmically spaced bins.
+
+\paragraph*{Multivariate (Cholesky) case.}
+
+\avi{This is majorly a work in progress}
+As in Section~\ref{sec:likelihood}, we denote by 
+\(\mathbf{d}(f_k) = (d_1(f_k), \ldots, d_p(f_k))^\top\)
+the complex DFT vector of the $p$-channel time series. 
+For the multivariate Whittle likelihood written in its Cholesky form, averaging the complex DFT vectors within a bin is not sufficient, since the quadratic term depends on second--order products $\mathbf{d}(f_k)\mathbf{d}(f_k)^{*}$. 
+To retain exactness while evaluating the model at a single frequency per bin, we instead aggregate bin  statistics that capture all second--order cross--products relevant to the likelihood.
+
+For channel (row) $j$ and bin $b$ with members $k\in b$, define
+\begin{align}
+c_j(b) &= \sum_{k\in b} |d_j(f_k)|^2, \\
+v_{j\nu}(b) &= \sum_{k\in b} d_j(f_k)\, d_\nu(f_k)^{*}, \qquad (\nu < j), \\
+G_{j\nu m}(b) &= \sum_{k\in b} d_\nu(f_k)\, d_m(f_k)^{*}, \qquad (\nu,m < j), \\
+K_b &= \#\{k \in b\}.
+\label{eq:coarse_stats}
+\end{align}
+
+Here $c_j(b)$ is a scalar, $v_j(b)\in\mathbb{C}^{j-1}$, and $G_j(b)\in\mathbb{C}^{(j-1)\times(j-1)}$ is Hermitian. 
+These quantities are the frequency--summed cross--products appearing in the quadratic form of the Whittle likelihood and can be accumulated in a single pass over the DFTs.
+
+Let $\boldsymbol{\theta}_j(\bar f_b)\in\mathbb{C}^{j-1}$ denote the vector of off--diagonal Cholesky coefficients for row $j$ evaluated at $\bar f_b$, and let $\delta_j(\bar f_b)^2$ be the corresponding diagonal variance. 
+The exact bin contribution to the row--$j$ log--Whittle likelihood is then
+\begin{equation}
+\label{eq:coarse_block}
+K_b \log \delta_j(\bar f_b)^2
+\;+\;
+\delta_j(\bar f_b)^{-2}
+\Bigl(
+\boldsymbol{\theta}_j^{*} G_j(b)\, \boldsymbol{\theta}_j
+- 2\,\Re\{\boldsymbol{\theta}_j^{*} v_j(b)\}
++ c_j(b)
+\Bigr).
+\end{equation}
+
+Summing \eqref{eq:coarse_block} over bins and rows recovers the full Whittle objective in terms of per--bin sufficient statistics and a coarse evaluation grid $\{\bar f_b\}$. 
+In other words, we trade $O(N)$ pointwise evaluations for $O(B)$ bin evaluations ($B \ll N$) \emph{without discarding within--bin spectral information}. 
+The only approximation arises from replacing 
+\begin{equation}
+\sum_{k\in b}\log\delta_j(f_k)^2
+\quad\text{by}\quad
+K_b \log\delta_j(\bar f_b)^2,
+\end{equation}
+which is negligible when $\delta_j(f)$ varies smoothly within each bin.
+
+\paragraph*{Implementation details.}
+
+We (i) retain all frequencies below a user--chosen transition $f_\mathrm{tr}$, 
+(ii) partition $[f_\mathrm{tr}, f_\mathrm{max}]$ into logarithmically spaced bins, 
+(iii) precompute $K_b$ and the sufficient statistics in \eqref{eq:coarse_stats} for each bin, and 
+(iv) evaluate the spline fields $\log\delta_j^2(f)$ and $\theta_{j\nu}(f)$ only at $\bar f_b$. 
+The coarse likelihood is then obtained by replacing the per--frequency sum with a per--bin sum, weighting the log--determinant terms by $K_b$ and using \eqref{eq:coarse_univar} or \eqref{eq:coarse_block} for the quadratic contributions. 
+Low--frequency points use $K_b=1$ and are unchanged.
+
+\paragraph*{Computational complexity.}
+
+Let $N$ be the number of fine frequencies and $B$ the number of coarse elements ($B = N_\mathrm{low} + N_\mathrm{bins}$). 
+Precomputing the bin statistics requires $O(Np^2)$ operations (a single pass over the DFTs). 
+Each likelihood evaluation thereafter scales as the unbinned case but with $N$ replaced by $B$, i.e.
+\begin{equation}
+\mathcal{O}(Bp^2),
+\end{equation}
+for the quadratic forms, plus the cost of evaluating the spline fields, approximately $\mathcal{O}(BK)$ per parameter family (where $K$ is the number of basis functions). 
+For typical settings $B \ll N$, runtime is reduced by roughly $N/B$ while preserving the same likelihood structure.
+
+
+
 \subsection{P-spline Modeling}
 We model the frequency-dependent parameters using penalized B-splines. Specifically, we represent:
+\avi{patricio writes that i might have messed up the indicies. Need to double check.}
 \begin{align}
 \log \delta_{kj}^2 &= \sum_{m=1}^{M_k} B_m(f_j) w_{k,m}^{(\delta)} \label{eq:delta_spline}\\
 \Re[\theta_{kl}(f_j)] &= \sum_{m=1}^{M_{kl}} B_m(f_j) w_{kl,m}^{(\Re)} \label{eq:theta_re_spline}\\
@@ -181,102 +440,6 @@ The penalty matrices $\bold{P}_j$ are constructed from finite differences of the
 The posterior distribution can be sampled using MCMC methods, with the Cholesky parameterization ensuring positive definiteness of the spectral density matrix throughout the sampling process.
 In our implementation, we use the No-U-Turn Sampler (NUTS) algorithm, which is well-suited for high-dimensional parameter spaces and efficiently explores the posterior distribution.
 
-
-\subsection{Coarse-graining the frequency grid}
-\label{subsec:coarse}
-
-Large data stretches or high sampling rates produce very fine frequency grids, for which a fully resolved Whittle analysis can be unnecessarily expensive in regions where the spectrum varies slowly. 
-We therefore use a coarse--graining strategy that preserves the Whittle likelihood while reducing the number of frequency evaluations. 
-Building off \citet{SGWBinner}, the key idea is to aggregate neighbouring Fourier ordinates into logarithmically spaced bins at high frequency, and to evaluate the model only at one representative frequency per bin, weighting the bin's contribution by the number of member frequencies. 
-We keep the low--frequency region unchanged to retain resolution where the spectrum typically has fewer data.
-
-\paragraph*{Univariate case.} \avi{Just to help us discuss}
-
-Let ${f_k}{k=1}^N$ be the original Fourier grid and $\mathbf d(f_k)=(d_1,\dots,d_p)^\top$ the complex DFT vector. 
-Below a transition $f\mathrm{tr}$ we keep every frequency (full resolution). 
-Above $f_\mathrm{tr}$ we partition the grid into logarithmically spaced bins $b=1,\dots,B$ with representative frequency $\bar f_b$ and cardinality $K_b=#{k\in b}$.
-
-Let $\{f_k\}$ denote the original Fourier grid and $I(f_k)$ the (one--sided) periodogram. 
-For a bin $b$ with representative frequency $\bar f_b$ and cardinality $K_b$, the univariate Whittle contribution 
-$\sum_{k\in b}\bigl\{\log S(f_k) + I(f_k)/S(f_k)\bigr\}$ is well approximated by
-\begin{equation}
-\label{eq:coarse_univar}
-K_b\,\log S(\bar f_b)\; +\; K_b\, \frac{\bar I_b}{S(\bar f_b)}\,,\qquad \bar I_b\equiv \frac{1}{K_b}\sum_{k\in b} I(f_k)\, ,
-\end{equation}
-provided $S(f)$ varies slowly across the bin. 
-This leads to a coarse grid $\{\bar f_b\}$ with weights $K_b$ and bin--mean periodogram $\bar I_b$. 
-In practice, we keep frequencies below a transition $f_\mathrm{tr}$ unchanged, and build $\log$--spaced bins above $f_\mathrm{tr}$. 
-This reduces cost roughly in proportion to the ratio of fine to coarse grid sizes, by using an approximate Whittle--likelihood, evaluated on a reduced grid.
-
-The full form of the likelihood with the frequency weighting is
-\begin{align}
-    \mathcal{L}(\d|\S)
-    \propto \prod_{b=1}^{B} \det(\S(\bar f_b))^{-K_b} \times 
-     \exp\left(-\frac{K_b}{T}\bar{\d}(f_b)^* \S(\bar f_b)^{-1} \bar{\d}(f_b)\right),
-\end{align}
-where $\bar{\d}(f_b)$ is the DFT vector at the representative frequency $\bar f_b$ and $B$ is the total number of bins. 
-This coarse Whittle likelihood is exact if $S(f)$ is constant within each bin, and remains accurate for smooth spectra that do not vary too rapidly within bins.
-
-
-
-\paragraph*{Multivariate (Cholesky) case.} 
-For the multivariate Whittle likelihood written in the Cholesky form (Sec.~\ref{sec:intro}), a naive average of the complex DFT vectors inside a bin is \\emph{not} sufficient, 
-because the quadratic term depends on second--order products $\mathbf d(f_k)\mathbf d(f_k)^\mathrm{H}$. 
-This means we cant simply replace $\mathbf d(f_k)$ with a bin--averaged $\bar{\mathbf d}(f_b)$, as  we did in the univariate case, as this will lead to errors in the cross--spectral terms
-To retain exactness at the bin level while evaluating the model at a single frequency per bin, we aggregate the \emph{bin sufficient statistics}.
-
-For channel (row) $j$ and bin $b$ with members $k\in b$, define
-\begin{align}
-\label{eq:coarse_stats}
-c_j(b) &= \sum_{k\in b} |d_j(f_k)|^2\,, & v_{j\ell}(b) &= \sum_{k\in b} d_j(f_k)\, d_\ell(f_k)^{\!*}\quad (\ell<j)\,,\\
-G_{j\ell m}(b) &= \sum_{k\in b} d_\ell(f_k)\, d_m(f_k)^{\!*}\quad (\ell,m<j)\, , && K_b = \#\{k\in b\}\, .
-\end{align}
-Let $\theta_j(\bar f_b)\in\mathbb C^{j-1}$ be the vector of off--diagonal Cholesky coefficients for row $j$ evaluated at the representative frequency $\bar f_b$, and let $\delta_j(\bar f_b)^2$ be the corresponding diagonal variance. The exact bin contribution to the row--$j$ Whittle log--likelihood is then
-\begin{equation}
-\label{eq:coarse_block}
-K_b\,\log \delta_j(\bar f_b)^2\; +\; \delta_j(\bar f_b)^{-2}\, \Bigl(\theta_j^{\!\mathrm H} G_j(b)\, \theta_j - 2\,\Re\{\theta_j^{\!\mathrm H} v_j(b)\} + c_j(b)\Bigr)\, .
-\end{equation}
-Summing \eqref{eq:coarse_block} over bins and rows recovers the full Whittle objective in terms of per--bin sufficient statistics and a coarse evaluation grid $\{\bar f_b\}$. In other words, we trade $O(N)$ pointwise evaluations for $O(B)$ bin evaluations (with $B\ll N$) \emph{without} discarding within--bin residual energy.
-
-V2
-
-
-Instead of averaging the DFT vectors, we precompute per–bin sufficient statistics that enter the Cholesky‑row likelihood.
-
-\paragraph*{Bin sufficient statistics (row $j$).}
-For a bin $b$ and row $j$ define
-\begin{align}
-c_j(b) &:= \sum_{k\in b} |d_j(f_k)|^2, \
-v_{j\ell}(b) &:= \sum_{k\in b} d_j(f_k), d_\ell(f_k)^{!}\quad(\ell<j), \
-G_{j\ell m}(b) &:= \sum_{k\in b} d_\ell(f_k), d_m(f_k)^{!}\quad(\ell,m<j),
-\end{align}
-so $c_j$ is a scalar, $v_j\in\mathbb C^{j-1}$, and $G_j\in\mathbb C^{(j-1)\times(j-1)}$ is Hermitian. These are just the frequency–summed cross–products that appear in the quadratic form of the Whittle likelihood. They can be accumulated in one pass over the high‑frequency DFTs.
-
-\paragraph*{Bin contribution to the row likelihood.}
-Let $\theta_j(\bar f_b)\in\mathbb C^{j-1}$ be the vector of off‑diagonal Cholesky coefficients for row $j$ evaluated at $\bar f_b$, and let $\delta_j(\bar f_b)^2$ be the corresponding diagonal variance. The row‑$j$ Whittle contribution of bin $b$ is
-\begin{equation}
-\label{eq:bin_ll_row}
-K_b,\log\delta_j(\bar f_b)^2;+;\delta_j(\bar f_b)^{-2},\Bigl(\theta_j^{!H} G_j(b),\theta_j;-;2,\Re{\theta_j^{!H} v_j(b)};+;c_j(b)\Bigr).
-\end{equation}
-Summing \eqref{eq:bin_ll_row} over bins and rows yields the coarse‑grained objective. Intuitively, we evaluate the spline fields $(\log\delta_j^2, \Re\theta_{j\ell}, \Im\theta_{j\ell})$ once per bin (at $\bar f_b$), and we reuse the exact within–bin residual energy captured by $(c,v,G)$. This keeps the quadratic term faithful to the original sum; the $\sum_{k\in b}\log\delta_j(f_k)^2$ part is approximated by $K_b\log\delta_j(\bar f_b)^2$, which is accurate when $\delta_j(f)$ varies smoothly over the bin. In practice we keep bins narrow enough (log spacing) that this approximation is negligible at high frequencies.
-
-
-The quadratic part of the Whittle objective at high frequency is exactly preserved by the bin statistics. Only the sum of $\log\delta_j^2$ terms is approximated by replacing ${\delta_j(f_k)}_{k\in b}$ with $\delta_j(\bar f_b)$; because the diagonal fields are spline‑smooth and bins are narrow on a log scale, hopefully this bias is negligible in the intended regime (smooth high‑frequency noise). Low‑frequency points  remain unbinned.
-
-
-\paragraph*{Implementation details } 
-We (i) retain all frequencies below a user--chosen transition $f_\mathrm{tr}$, (ii) partition $[f_\mathrm{tr}, f_\max]$ into logarithmically spaced bins, (iii) precompute $K_b$ and the sufficient statistics \eqref{eq:coarse_stats} for each bin, and (iv) evaluate the spline fields $\log\delta_j^2(f)$ and $\theta_{j\ell}(f)$ at $\bar f_b$. The coarse likelihood is obtained by replacing the per--frequency sum with a per--bin sum, weighting the log--determinant terms by $K_b$ and using \eqref{eq:coarse_univar} or \eqref{eq:coarse_block} for the quadratic terms. 
-Low--frequency points use $K_b\!=\!1$ and are unchanged.
-
-This model allows us to use a approximate log-likelihood while accelerating inference in smooth, high--frequency regions. 
-It also integrates well with our P--spline implementation: basis functions are evaluated at the coarse grid (on the same normalized domain), the hierarchical priors are unchanged, and the sampler only sees fewer frequency rows. 
-Diagnostics and plots reconstruct periodograms and cross--spectra from the aggregated cross--spectral sums divided by $K_b$, ensuring visually consistent comparisons between the full and coarse analyses.
-
-\paragraph*{Computational complexity.}
-Let $N$ be the number of fine frequencies and $B$ the total number of coarse elements ($B=N_\mathrm{low}+N_\mathrm{bins}$). 
-The cost of precomputing bin statistics is $O(N p^2)$ (one pass over the DFTs). 
-After that, each likelihood evaluation scales like the unbinned case with $N$ replaced by $B$, i.e. roughly $O(B,p^2)$ for the quadratic forms plus the cost of evaluating the spline fields (which scales like $O(B K)$ per parameter family, with $K$ the number of basis functions). 
-For typical settings $B\ll N$, so runtime is reduced by a factor $\approx N/B$ while keeping the same likelihood structure.
 
 
 \section{Computation}

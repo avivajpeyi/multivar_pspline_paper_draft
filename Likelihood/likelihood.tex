@@ -1,0 +1,94 @@
+\documentclass[landscape,a4paper,11pt]{article}
+
+% ===============================
+% PAGE GEOMETRY
+% ===============================
+\usepackage[margin=.5cm]{geometry}  % small margins
+\geometry{
+  a4paper,
+  landscape,
+  left=0.1cm,      % smaller left margin
+  right=1.5cm,
+  top=2.5cm,
+  bottom=1.5cm
+}
+
+% ===============================
+% FONTS AND MATH
+% ===============================
+\usepackage{amsmath, amssymb, amsfonts, bm}
+\usepackage{mathpazo} % nice readable font (optional)
+\usepackage{microtype} % improves spacing
+
+% ===============================
+% OTHER USEFUL PACKAGES
+% ===============================
+\usepackage{graphicx}     % include graphics
+\usepackage{booktabs}     % better tables
+\usepackage{siunitx}      % units and alignment
+\usepackage{hyperref}     % hyperlinks
+\usepackage{xcolor}       % color text
+\usepackage{enumitem}     % compact lists
+
+% ===============================
+% HEADER / FOOTER (optional)
+% ===============================
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\thepage}
+\lhead{Coarse–graining approach}
+\renewcommand{\headrulewidth}{0pt}
+
+\renewcommand{\d}{{\bf d}}
+\newcommand{\Y}{{\bf Y}}
+\renewcommand{\S}{{\bf S}}
+\renewcommand{\0}{{\bf 0}}
+\renewcommand{\I}{{\bf I}}
+
+% ===============================
+% DOCUMENT
+% ===============================
+\begin{document}
+
+\begin{tabular}{lccccccccc}
+\toprule	
+Frequencies: &$f_1$& $\cdots$ & $f_{N_h}$ & & $\cdots$ & & && $f_{N_l}$\\ \midrule
+Chunk 1 &$\I^{(1)}(f_1) = \d^{(1)}(f_1)\d^{(1)}(f_1)^*$ &  $\cdots$ & $\I^{(1)}(f_{N_h}) = \d^{(1)}(f_{N_h})\d^{(1)}(f_{N_h})^*$ && $\cdots$&& &&$\I^{(1)}(f_{N_l}) = \d^{(1)}(f_{N_l})\d^{(1)}(f_{N_l})^*$\\
+\multicolumn{1}{c}{\vdots}&\vdots&&&&&&\\
+Chunk $N_b$&$\I^{(N_b)}(f_1) = \d^{(N_b)}(f_1)\d^{(N_b)}(f_1)^*$ &  $\cdots$ & $\I^{(N_b)}(f_{N_h}) = \d^{(N_b)}(f_{N_h})\d^{(N_b)}(f_{N_h})^*$ && $\cdots$&& && $\I^{(N_b)}(f_{N_l}) = \d^{(N_b)}(f_{N_l})\d^{(N_b)}(f_{N_l})^*$\\ \midrule
+Mean& $\bar{\I}(f_1) = \frac{1}{N_b}\sum_{i=1}^{N_b}\I^{(i)}(f_1)$ & $\cdots$ & $\bar{\I}(f_{N_h}) = \frac{1}{N_b}\sum_{i=1}^{N_b}\I^{(i)}(f_{N_h})$ &&$\cdots$&& && $\bar{\I}(f_{N_l}) = \frac{1}{N_b}\sum_{i=1}^{N_b}\I^{(i)}(f_{N_l})$ \\
+Sum& $\Y(f_1) = N_b \bar{\I}(f_1)$ & $\cdots$ & $\Y(f_{N_h}) = N_b \bar{\I}(f_{N_h})$ &&$\cdots$&& && $\Y(f_{N_l}) = N_b \bar{\I}(f_{N_l})$ \\
+%Variance& $s^2_1$ & $\cdots$& $s^2_m$ & & $\cdots$ && && $s^2_\nu$\\  
+%&\multicolumn{3}{c}{\upbracefill}&$\cdots$&\multicolumn{1}{c}{\upbracefill}& && $\cdots$&\\ 
+&\multicolumn{3}{c}{\upbracefill}&$\cdots$&\multicolumn{1}{c}{\upbracefill}& $\cdots$ & \multicolumn{3}{c}{\upbracefill}\\ 
+Freq bins&&$J_1 = (f_1, \dots, f_{N_h})$&&$\cdots$&$J_h$& $\cdots$ & & & $J_{N_c}$ \\
+Approx&&$(\bar{f}_1,\bar{\Y}_1)$&&$\cdots$&$(\bar{f}_h,\bar{\Y}_h)$& $\cdots$ & & & $(\bar{f}_{N_c},\bar{\Y}_{N_c})$ \\
+Bin freq mean&&$\bar{f}_1 = \frac{1}{N_h}\sum_{l=1}^{N_h}f_l$&&&$\cdots$& & & &\\
+Bin pdgrm sum&&$\bar{\Y}_1 = \sum_{l=1}^{N_h}\Y(f_l)$&&&$\cdots$& & & & \\
+
+%&&$(f^{(1)},\mathcal{D}^{(1)})$&&$\cdots$&$(f^{(\cdot)},\mathcal{D}^{(\cdot)})$& && $\cdots$&\\
+\end{tabular}\\
+
+\vspace{1em}
+where $\d(f)$ is the Discrete Fourier transform (DFT) at frequency $f$ and
+\begin{align*}
+    \d(f) &\sim {\cal N}_p(\0, \S(f)) \\
+    \I(f) = \d(f)\d(f)^* &\sim {\cal CW}(\S(f), 1) \\
+     \Y(f) =  N_b \bar{\I}(f) = \sum_{i=1}^{N_b}\I^{(i)}(f) &\sim {\cal CW}(\S(f), N_b) \\
+     \bar{\Y}_h & \dot{\sim} {\cal CW}(\S(\bar{f}_h), N_b \times N_h)
+\end{align*}
+
+Thus, the approximated likelihood for $\bar{\Y}$ is given by
+\begin{align*}
+\mathcal{L}(\bar{\Y}|\S) \propto \prod_{h=1}^{N_c} \left|\S(\bar{f}_h)\right|^{-N_b \times N_h} \exp\left(- \tr\left[ \S(\bar{f}_h)^{-1} \bar{\Y}_h\right]\right)    
+\end{align*}
+
+%\begin{align*}
+%f^{(1)}= \sum_{i=1}^{m}w_i f_i, \quad \mathcal{D}^{(1)} = \sum_{i=1}^{m} w_i \bar{D}_i\, \:\: \text{ where } \:\: w_i=\dfrac{s_i^{-2}}{\sum_{i=1}^m s_i^{-2}}.
+%\end{align*}
+
+%\hspace{-2.2em}
+%Thus, we'll generate $f^{(1)},\dots,f^{(\nu^*)}$ and $\mathcal{D}^{(1)}, \dots, \mathcal{D}^{(\nu^*)}$.		
+\end{document}
+
