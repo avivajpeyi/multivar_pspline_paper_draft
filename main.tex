@@ -94,7 +94,7 @@ Let $\d_k=(d_1(f_k), d_2(f_k), \ldots, d_p(f_k))^\intercal$ be the Discrete Four
 \end{align}
 where $f_k= k \Delta_f= k/({n\Delta_t})=k /{T}$ for $k=1,\ldots, N$, and $N = n/2$ if $n$ is even, $N = (n-1)/2$ if $n$ is odd. 
 
-For stationary time series with absolutely summable autocovariances, i.e., $\sum_{h=1}^\infty\gamma_{lm}(h)<\infty$, the discrete Fourier coefficients $\d(f_k)$ %(multiplied by $1 / \sqrt{n}$)
+For stationary time series with absolutely summable autocovariances, i.e., $\sum_{h=1}^\infty |\gamma_{lm}(h)|<\infty$, the discrete Fourier coefficients $\d(f_k)$ %(multiplied by $1 / \sqrt{n}$)
 are asymptotically independent and have a complex Gaussian distribution with mean zero and  covariance matrix $T\, \S(f_k)$ with  the continuous two-sided spectral density matrix 
 \[\S(f)=\frac{1}{2f_{Ny}}
 \sum_{\nu=-\infty}^{\infty} \Gamma(\nu \Delta_t) \exp \left(-2\pi i f \nu\Delta_t \right),\] %
@@ -191,214 +191,105 @@ This means, we can run an MCMC chain for each posterior of $\bdelta_1$, $(\bdelt
 
 
 
-\begin{table*}[htbp]
-\centering
-\caption*{\textbf{Notation reference}}
-\renewcommand{\arraystretch}{1.3}
-\begin{tabular}{>{\raggedright}p{3cm}p{11cm}}
-\toprule
-\textbf{Symbol} & \textbf{Meaning / Definition} \\ 
-\midrule
-$\mathbf{Z}_t \in \mathbb{R}^p$ 
-  & $p$-dimensional zero-mean stationary time series observed at discrete times $t=1,\ldots,n$. \\
+% \begin{table*}[htbp]
+% \centering
+% \caption*{\textbf{Notation reference}}
+% \renewcommand{\arraystretch}{1.3}
+% \begin{tabular}{>{\raggedright}p{3cm}p{11cm}}
+% \toprule
+% \textbf{Symbol} & \textbf{Meaning / Definition} \\ 
+% \midrule
+% $\mathbf{Z}_t \in \mathbb{R}^p$ 
+%   & $p$-dimensional zero-mean stationary time series observed at discrete times $t=1,\ldots,n$. \\
 
-$\Delta_t = 1/(2f_{\mathrm{Ny}})$ 
-  & Sampling interval; $f_{\mathrm{Ny}}$ is the Nyquist frequency, with sampling rate $f_s = 1/\Delta_t = 2f_{\mathrm{Ny}}$. \\
+% $\Delta_t = 1/(2f_{\mathrm{Ny}})$ 
+%   & Sampling interval; $f_{\mathrm{Ny}}$ is the Nyquist frequency, with sampling rate $f_s = 1/\Delta_t = 2f_{\mathrm{Ny}}$. \\
 
-$T = n\Delta_t$ 
-  & Total duration of the observation. \\
+% $T = n\Delta_t$ 
+%   & Total duration of the observation. \\
 
-$f_k = k / T$ 
-  & Fourier frequencies for $k = 1,\ldots,N$, where $N = n/2$ if $n$ is even. \\
+% $f_k = k / T$ 
+%   & Fourier frequencies for $k = 1,\ldots,N$, where $N = n/2$ if $n$ is even. \\
 
-$\Delta_f = 1/T$ 
-  & Frequency resolution of the discrete Fourier transform. \\
+% $\Delta_f = 1/T$ 
+%   & Frequency resolution of the discrete Fourier transform. \\
 
-$\mathbf{d}(f_k) = (d_1(f_k),\ldots,d_p(f_k))^\top$ 
-  & Complex Discrete Fourier Transform (DFT) vector of $\mathbf{Z}_t$ at frequency $f_k$. \\
+% $\mathbf{d}(f_k) = (d_1(f_k),\ldots,d_p(f_k))^\top$ 
+%   & Complex Discrete Fourier Transform (DFT) vector of $\mathbf{Z}_t$ at frequency $f_k$. \\
 
-$d_j(f_k)$ 
-  & DFT coefficient for channel $j$ at frequency $f_k$. \\
+% $d_j(f_k)$ 
+%   & DFT coefficient for channel $j$ at frequency $f_k$. \\
 
-$\mathbf{S}(f_k) \in \mathbb{C}^{p\times p}$ 
-  & Cross-spectral density matrix at frequency $f_k$, Hermitian and positive semidefinite. \\
+% $\mathbf{S}(f_k) \in \mathbb{C}^{p\times p}$ 
+%   & Cross-spectral density matrix at frequency $f_k$, Hermitian and positive semidefinite. \\
 
-$\mathbf{S}(f_k)^{-1} = \mathbf{T}(f_k)^{*}\mathbf{D}(f_k)^{-1}\mathbf{T}(f_k)$ 
-  & Cholesky parameterization of the inverse spectral density matrix. \\
+% $\mathbf{S}(f_k)^{-1} = \mathbf{T}(f_k)^{*}\mathbf{D}(f_k)^{-1}\mathbf{T}(f_k)$ 
+%   & Cholesky parameterization of the inverse spectral density matrix. \\
 
-$\mathbf{T}(f_k)$ 
-  & Complex unit lower-triangular matrix with ones on the diagonal and off-diagonal elements $-\theta_{jl}(f_k)$ for $j>l$. \\
+% $\mathbf{T}(f_k)$ 
+%   & Complex unit lower-triangular matrix with ones on the diagonal and off-diagonal elements $-\theta_{jl}(f_k)$ for $j>l$. \\
 
-$\mathbf{D}(f_k) = \mathrm{diag}(\delta_{1k}^2,\ldots,\delta_{pk}^2)$ 
-  & Diagonal matrix of positive real variances at frequency $f_k$. \\
+% $\mathbf{D}(f_k) = \mathrm{diag}(\delta_{1k}^2,\ldots,\delta_{pk}^2)$ 
+%   & Diagonal matrix of positive real variances at frequency $f_k$. \\
 
-$\boldsymbol{\theta}_j(f_k) \in \mathbb{C}^{j-1}$ 
-  & Vector of off-diagonal Cholesky coefficients for row $j$ at frequency $f_k$. \\
+% $\boldsymbol{\theta}_j(f_k) \in \mathbb{C}^{j-1}$ 
+%   & Vector of off-diagonal Cholesky coefficients for row $j$ at frequency $f_k$. \\
 
-$\delta_j(f_k)^2$ 
-  & Diagonal element (variance) for row $j$ at frequency $f_k$. \\
+% $\delta_j(f_k)^2$ 
+%   & Diagonal element (variance) for row $j$ at frequency $f_k$. \\
 
-$\mathcal{L}(\mathbf{d}|\mathbf{S})$ 
-  & Multivariate Whittle likelihood of the DFT vector given the spectral density matrix $\mathbf{S}$. \\
+% $\mathcal{L}(\mathbf{d}|\mathbf{S})$ 
+%   & Multivariate Whittle likelihood of the DFT vector given the spectral density matrix $\mathbf{S}$. \\
 
-$c_j(b)$ 
-  & Bin-level sum of squared magnitudes for channel $j$: $\sum_{k\in b} |d_j(f_k)|^2$. \\
+% $c_j(b)$ 
+%   & Bin-level sum of squared magnitudes for channel $j$: $\sum_{k\in b} |d_j(f_k)|^2$. \\
 
-$v_{j\nu}(b)$ 
-  & Cross-term between channels $j$ and $\nu$ within bin $b$: $\sum_{k\in b} d_j(f_k)d_\nu(f_k)^{*}$ for $\nu<j$. \\
+% $v_{j\nu}(b)$ 
+%   & Cross-term between channels $j$ and $\nu$ within bin $b$: $\sum_{k\in b} d_j(f_k)d_\nu(f_k)^{*}$ for $\nu<j$. \\
 
-$G_{j\nu m}(b)$ 
-  & Cross-spectrum matrix term within bin $b$: $\sum_{k\in b} d_\nu(f_k)d_m(f_k)^{*}$ for $\nu,m<j$. \\
+% $G_{j\nu m}(b)$ 
+%   & Cross-spectrum matrix term within bin $b$: $\sum_{k\in b} d_\nu(f_k)d_m(f_k)^{*}$ for $\nu,m<j$. \\
 
-$K_b = \#\{k\in b\}$ 
-  & Number of fine-grid frequencies contained in bin $b$. \\
+% $K_b = \#\{k\in b\}$ 
+%   & Number of fine-grid frequencies contained in bin $b$. \\
 
-$\bar f_b$ 
-  & Representative (log-spaced) frequency of bin $b$. \\
+% $\bar f_b$ 
+%   & Representative (log-spaced) frequency of bin $b$. \\
 
-$\bar I_b$ 
-  & Bin-mean periodogram value, $\bar I_b = (1/K_b)\sum_{k\in b} I(f_k)$. \\
+% $\bar I_b$ 
+%   & Bin-mean periodogram value, $\bar I_b = (1/K_b)\sum_{k\in b} I(f_k)$. \\
 
-$f_\mathrm{tr}$ 
-  & Transition frequency separating fine-resolution and coarse (binned) regimes. \\
+% $f_\mathrm{tr}$ 
+%   & Transition frequency separating fine-resolution and coarse (binned) regimes. \\
 
-$N$ 
-  & Total number of fine-grid Fourier frequencies. \\
+% $N$ 
+%   & Total number of fine-grid Fourier frequencies. \\
 
-$B$ 
-  & Total number of coarse bins ($B\ll N$). \\
+% $B$ 
+%   & Total number of coarse bins ($B\ll N$). \\
 
-$p$ 
-  & Number of observed channels. \\
+% $p$ 
+%   & Number of observed channels. \\
 
-$K$ 
-  & Number of spline basis functions per parameter family in the P-spline model. \\
+% $K$ 
+%   & Number of spline basis functions per parameter family in the P-spline model. \\
 
-\bottomrule
-\end{tabular}
-\end{table*}
+% \bottomrule
+% \end{tabular}
+% \end{table*}
 
 \subsection{(Renate's version)Coarse--graining the frequency grid}
 \label{subsec:coarse}
-Starting from equation (5), one could further coarse-grain' the frequencies by dividing the set of Fourier frequencies into $N_c$ disjoint subsets $J_h$, i.e., $\{f_1,\ldots,f_{N_l}\}=\cup_{h=1}^{N_c} J_h$, where each $J_h$ contains $N_h+1$ frequencies and $\bar{f}_h$ denotes the midpoint Fourier frequency of interval $J_h$.
-Instead of each individual $\Y(f_k), k=1,\ldots,N_l$, we use $\bar{\Y}_h=\sum_{f\in J_h} \Y(f)$, for $h=1,\ldots, N_c$. As the $\Y(f)$ are asymptotically independent and complex Wishart distributed, i.e., $\Y(f)\sim {\cal CW}(\S(f), N_b)$, the distribution of $\Y_h$ can be approximated by ${\cal CW}(\S(\bar{f}_h), N_b(N_h+1))$, but only under the assumption that the spectral density matrices $\S(f)$ for $f\in J_h$ are very close. (Note that the sum of independent complex Wishart distributions is complex Wishart but only if the scale matrices are identical. If they differ, the distribution can only  be characterised via its Laplace transform but does not have a closed-form density. [This is a mistake in Quentin's JCAP paper])
+Starting from equation (5), one could further `coarse-grain' the frequencies by dividing the set of Fourier frequencies into $N_c$ subsequent and disjoint subsets $J_h$, i.e., $\{f_1,\ldots,f_{N_l}\}=\cup_{h=1}^{N_c} J_h$, where each $J_h$ contains an odd number $N_h$ frequencies and $\bar{f}_h$ denotes the midpoint Fourier frequency of interval $J_h$.
+Instead of each individual $\Y(f_k), k=1,\ldots,N_l$, we use $\bar{\Y}_h=\sum_{f\in J_h} \Y(f)$, for $h=1,\ldots, N_c$. As the $\Y(f)$ are asymptotically independent and complex Wishart distributed, i.e., $\Y(f)\sim {\cal CW}(\S(f), N_b)$, the distribution of $\Y_h$ can be approximated by ${\cal CW}(\S(\bar{f}_h), N_b*N_h)$, but only under the assumption that the spectral density matrices $\S(f)$ for $f\in J_h$ are very close. (Note that the sum of independent complex Wishart distributions is complex Wishart but only if the scale matrices are identical. If they differ, the distribution can only  be characterised via its Laplace transform but does not have a closed-form density. [This is a mistake in Quentin's JCAP paper])
 So it is important to choose the length of the frequency intervals such that they don't contain peaks or abrupt changes of the spectrum.
 Then the likelihood in equation (\ref{eq:log-like}) can be approximated by
 \begin{eqnarray}\label{eq:log-like}
-  &\propto &   \prod_{h=1}^{N_c} \left|\S(\bar{f}_h)\right|^{-N_b(N_h+1)} \exp\left(- \tr\left[ \S(\bar{f}_h)^{-1} \bar{\Y}_h\right]\right)\\
+  &\propto &   \prod_{h=1}^{N_c} \left|\S(\bar{f}_h)\right|^{-N_b*N_h} \exp\left(- \tr\left[ \S(\bar{f}_h)^{-1} \bar{\Y}_h\right]\right)\\
  % &\propto &   \prod_{k=1}^{N_l} \left|\S(f_k)\right|^{-N_b} \exp\left(- %\sum_{\nu=1}^p\u_\nu^{(k)*}\S(f_k)^{-1}\u_\nu^{(k)}\right)
-  &\propto &  \prod_{h=1}^{N_c} \left|\S(\bar{f}_h)\right|^{-N_b(N_h+1)}  \exp\left(\sum_{\nu=1}^p-\u_\nu^{(h)*}\S(\bar{f}_h)^{-1}\u_\nu^{(h)}\right)
+  &\propto &  \prod_{h=1}^{N_c} \left|\S(\bar{f}_h)\right|^{-N_b*N_h}  \exp\left(\sum_{\nu=1}^p-\u_\nu^{(h)*}\S(\bar{f}_h)^{-1}\u_\nu^{(h)}\right)
 \end{eqnarray}
 where we use the eigendecomposition of $\bar{\Y}_h=\sum_{\nu=1}^p \lambda^{(h)}_\nu \v^{(h)}_\nu\v^{(h)*}_\nu=\sum_{\nu=1}^p  \u^{(h)}_\nu\u^{(h)*}_\nu$ with $\u^{(h)}_\nu=\sqrt{\lambda^{(h)}_l}\v^{(h)}_\nu$. 
-
-
-    
-
-\subsection{Coarse--graining the frequency grid}
-\label{subsec:coarse}
-
-For long data segments or high sampling rates, the Fourier grid $\{f_k\}_{k=1}^N$ can be extremely fine, making a full Whittle likelihood evaluation unnecessarily expensive in spectral regions where $\mathbf{S}(f)$ varies slowly. 
-We therefore adopt a \emph{coarse--graining} strategy that preserves the Whittle likelihood structure while reducing the number of frequency evaluations.
-
-Following \citet{Caprini_2019} (\textsc{SGWBINNER}), we aggregate neighbouring Fourier ordinates into logarithmically spaced bins at high frequencies and evaluate the model only at one representative frequency per bin. 
-Each bin’s contribution to the likelihood is weighted by its number of member frequencies. 
-The low--frequency region is left unbinned to retain resolution where the spectrum typically varies most rapidly.
-
-\paragraph*{Univariate case.}
-
-Let $\{f_k\}_{k=1}^N$ denote the original Fourier grid and $I(f_k)$ the (one--sided) periodogram. 
-Below a transition frequency $f_\mathrm{tr}$ we retain every frequency (full resolution). 
-Above $f_\mathrm{tr}$ we partition the grid into logarithmically spaced bins $b=1,\ldots,B$, each with representative frequency $\bar f_b$ and cardinality $K_b = \#\{k \in b\}$.
-
-For a smooth spectral density $S(f)$, the sum of Whittle contributions within bin $b$,
-\begin{equation}
-\sum_{k\in b}\!\left\{\log S(f_k) + \frac{I(f_k)}{S(f_k)}\right\},
-\end{equation}
-is well approximated by
-\begin{equation}
-\label{eq:coarse_univar}
-K_b \log S(\bar f_b)
-\;+\;
-K_b \frac{\bar I_b}{S(\bar f_b)}\,,
-\end{equation}
-where
-\begin{equation}
-\bar I_b
-\equiv
-\frac{1}{K_b}\sum_{k\in b} I(f_k)\,.
-\end{equation}
-
-This defines a coarse grid $\{\bar f_b\}$ with weights $K_b$ and bin--mean periodogram values $\bar I_b$. 
-Replacing the fine--grid sum by the coarsened version gives the approximate Whittle likelihood
-\begin{equation}
-\label{eq:coarse_univar_ll}
-\mathcal{L}(\mathbf{d}|\mathbf{S})
-\propto
-\prod_{b=1}^{B}
-\!
-\left[\det\mathbf{S}(\bar f_b)\right]^{-K_b}
-\exp\!\left(
--\frac{K_b}{T}\,
-\mathbf{d}(\bar f_b)^{*}
-\mathbf{S}(\bar f_b)^{-1}
-\mathbf{d}(\bar f_b)
-\right),
-\end{equation}
-which is exact if $S(f)$ is constant within each bin, and remains accurate when $S(f)$ varies slowly across logarithmically spaced bins.
-
-\paragraph*{Multivariate (Cholesky) case.}
-
-\avi{This is majorly a work in progress}
-As in Section~\ref{sec:likelihood}, we denote by 
-\(\mathbf{d}(f_k) = (d_1(f_k), \ldots, d_p(f_k))^\top\)
-the complex DFT vector of the $p$-channel time series. 
-For the multivariate Whittle likelihood written in its Cholesky form, averaging the complex DFT vectors within a bin is not sufficient, since the quadratic term depends on second--order products $\mathbf{d}(f_k)\mathbf{d}(f_k)^{*}$. 
-To retain exactness while evaluating the model at a single frequency per bin, we instead aggregate bin  statistics that capture all second--order cross--products relevant to the likelihood.
-
-For channel (row) $j$ and bin $b$ with members $k\in b$, define
-\begin{align}
-c_j(b) &= \sum_{k\in b} |d_j(f_k)|^2, \\
-v_{j\nu}(b) &= \sum_{k\in b} d_j(f_k)\, d_\nu(f_k)^{*}, \qquad (\nu < j), \\
-G_{j\nu m}(b) &= \sum_{k\in b} d_\nu(f_k)\, d_m(f_k)^{*}, \qquad (\nu,m < j), \\
-K_b &= \#\{k \in b\}.
-\label{eq:coarse_stats}
-\end{align}
-
-Here $c_j(b)$ is a scalar, $v_j(b)\in\mathbb{C}^{j-1}$, and $G_j(b)\in\mathbb{C}^{(j-1)\times(j-1)}$ is Hermitian. 
-These quantities are the frequency--summed cross--products appearing in the quadratic form of the Whittle likelihood and can be accumulated in a single pass over the DFTs.
-
-Let $\boldsymbol{\theta}_j(\bar f_b)\in\mathbb{C}^{j-1}$ denote the vector of off--diagonal Cholesky coefficients for row $j$ evaluated at $\bar f_b$, and let $\delta_j(\bar f_b)^2$ be the corresponding diagonal variance. 
-The exact bin contribution to the row--$j$ log--Whittle likelihood is then
-\begin{equation}
-\label{eq:coarse_block}
-K_b \log \delta_j(\bar f_b)^2
-\;+\;
-\delta_j(\bar f_b)^{-2}
-\Bigl(
-\boldsymbol{\theta}_j^{*} G_j(b)\, \boldsymbol{\theta}_j
-- 2\,\Re\{\boldsymbol{\theta}_j^{*} v_j(b)\}
-+ c_j(b)
-\Bigr).
-\end{equation}
-
-Summing \eqref{eq:coarse_block} over bins and rows recovers the full Whittle objective in terms of per--bin sufficient statistics and a coarse evaluation grid $\{\bar f_b\}$. 
-In other words, we trade $O(N)$ pointwise evaluations for $O(B)$ bin evaluations ($B \ll N$) \emph{without discarding within--bin spectral information}. 
-The only approximation arises from replacing 
-\begin{equation}
-\sum_{k\in b}\log\delta_j(f_k)^2
-\quad\text{by}\quad
-K_b \log\delta_j(\bar f_b)^2,
-\end{equation}
-which is negligible when $\delta_j(f)$ varies smoothly within each bin.
-
-\paragraph*{Implementation details.}
-
-We (i) retain all frequencies below a user--chosen transition $f_\mathrm{tr}$, 
-(ii) partition $[f_\mathrm{tr}, f_\mathrm{max}]$ into logarithmically spaced bins, 
-(iii) precompute $K_b$ and the sufficient statistics in \eqref{eq:coarse_stats} for each bin, and 
-(iv) evaluate the spline fields $\log\delta_j^2(f)$ and $\theta_{j\nu}(f)$ only at $\bar f_b$. 
-The coarse likelihood is then obtained by replacing the per--frequency sum with a per--bin sum, weighting the log--determinant terms by $K_b$ and using \eqref{eq:coarse_univar} or \eqref{eq:coarse_block} for the quadratic contributions. 
-Low--frequency points use $K_b=1$ and are unchanged.
 
 \paragraph*{Computational complexity.}
 
