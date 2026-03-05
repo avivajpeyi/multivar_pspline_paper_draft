@@ -57,33 +57,6 @@ We illustrate relevance to LISA by estimating the multichannel noise spectral ma
 
 \maketitle
 
-%\tableofcontents
-
-
-\section{TODOs}
-\color{teal}
-
-
-
-Analysis
-\begin{itemize}
-    \item Compare VAR2 with SGVB and VNPC (jianan to help), DONE
-    \item Run LISA on  simulated dataset (true PSD and CSD known)
-\end{itemize}
-
-
-Writing
-\begin{itemize}
-    \item 
-\end{itemize}
-
-Future tasks
-\begin{itemize}
-    \item Quantify how good VI initialisation is 
-    \item Test our informed priors given parametric model
-\end{itemize}
-\color{black}
-
 
 
 \section{\label{sec:intro}Introduction}
@@ -105,7 +78,7 @@ The computational footprint for this method is predictable: for a fixed number o
 Implementation of this methodology is expected to improve LISA's detection sensitivity through more accurate noise characterization and reduce systematic errors in parameter estimation by properly accounting for inter-channel correlations. 
 These improvements directly impact LISA's primary science objectives, including the detection of massive black hole mergers, galactic binary systems, and potential primordial gravitational wave backgrounds.
 
-
+\newpage
 \section{Multivariate P-splines}
 
 
@@ -135,7 +108,7 @@ The multivariate Whittle likelihood is given by
 \end{align}
 where $\d(f_k)^*$ is the conjugate transpose of the $\d(f_k)$ and $\S(f_k)$ is a $p \times p$ Hermitian positive semidefinite spectral density matrix at each $f_k$. 
 
- We divide the time series into $N_{b}$ equal-sized blocks $\Z=(\Z^{(1)},\ldots,\Z^{(N_{b})})^\intercal $ with each block a $p$-dimensional time series each of length $n/N_{b}$. The discrete Fourier transform of each block is denoted by 
+ We divide the time series into $N_{b}$ equal-sized blocks $\Z=(\Z^{(1)},\ldots,\Z^{(N_{b})})^\intercal $ with each block a $p$-dimensional time series each of length $L_b=n/N_{b}$. The discrete Fourier transform of each block is denoted by 
 $\d^{(i)}$, $i=1,\ldots,N_{b}$. 
 Assuming stationarity of the time series and independence among different blocks, the overall blocked likelihood is the product of the individual Whittle likelihoods of each block,
 \begin{equation}\label{eq:block_lnl}
@@ -170,7 +143,12 @@ the likelihood function can be expressed as
 
 
 \subsection{Parameterization using the Cholesky Decomposition}
-Following the approach of \citet{RosenOri2007Aeom,Hu2023}, we parameterize the inverse spectral density matrix using its Cholesky decomposition. Specifically, we write $\bold{S}(f_k)^{-1} = \bold{T}_k^* \bold{D}_k^{-1} \bold{T}_k$, where $\bold{D}_k$ is a diagonal matrix with positive diagonal elements $\delta_{1k}^2, \delta_{2k}^2, \ldots, \delta_{pk}^2$ and
+Following the approach of \citet{RosenOri2007Aeom,Hu2023}, we parameterize the inverse spectral density matrix using its Cholesky decomposition. 
+Specifically, we write
+\begin{equation}
+\mathbf{S}(f_k)^{-1} = \mathbf{T}_k^* \, \mathbf{D}_k^{-1} \, \mathbf{T}_k,
+\end{equation}
+where $\mathbf{D}_k$ is a diagonal matrix with positive diagonal elements $\delta_{1k}^2, \delta_{2k}^2, \ldots, \delta_{pk}^2$ and
 \begin{align}
 \bold{T}_k = \begin{pmatrix}
 1 & 0 & 0 & \cdots & 0 \\
@@ -213,7 +191,20 @@ Explicitly, if we have 3 channels as in the LISA case, we have 3 independent lik
 &  \prod_{k=1}^{N} \delta_{3k}^{-2N_b} \exp \left(\frac{-\sum_{\nu=1}^p\left|u_{3\nu}^{(k)}-\theta_{31}^{(k)}u_{1\nu}^{(k)} -\theta_{32}^{(k)}u_{2\nu}^{(k)}\right|^2}{T\delta_{3k}^2} \right)
 \label{eq:likelihood3}
 \end{align}%
-This means, we can run an MCMC chain for each posterior of $\bdelta_1$, $(\bdelta_2,\btheta_{21})$, and $(\bdelta_3,\btheta_{31},\btheta_{32})$ separately and in parallel which should reduce the computation time.
+Note that a factorised likelihood does not in general imply a factorised posterior. Here, however, the posterior also factorises because we place independent priors across these three parameter blocks,
+\begin{align}
+ \pi(\bdelta_1,\bdelta_2,\btheta_{21},&\bdelta_3,\btheta_{31},\btheta_{32})
+  = \notag \\
+ & \pi(\bdelta_1)\,\pi(\bdelta_2,\btheta_{21})\,\pi(\bdelta_3,\btheta_{31},\btheta_{32}),
+ \\
+ p(\bdelta_1,\bdelta_2,\btheta_{21},&\bdelta_3,\btheta_{31},\btheta_{32}\mid \u_1,\u_2,\u_3)
+  \propto \notag \\
+ & \mathcal{L}_1(\u_1\mid \bdelta_1)\,\pi(\bdelta_1)\times \notag \\
+ & \mathcal{L}_2(\u_1,\u_2\mid \bdelta_2,\btheta_{21})\,\pi(\bdelta_2,\btheta_{21})\times \notag \\
+ & \mathcal{L}_3(\u_1,\u_2,\u_3\mid \bdelta_3,\btheta_{31},\btheta_{32})\,\pi(\bdelta_3,\btheta_{31},\btheta_{32}).
+\end{align}
+Hence Bayes' rule yields three independent posterior factors corresponding to $\bdelta_1$, $(\bdelta_2,\btheta_{21})$, and $(\bdelta_3,\btheta_{31},\btheta_{32})$. This means we can run an MCMC chain for each block separately and in parallel, which should reduce the computation time.                                                                                                                                                                         
+
 
 
 
@@ -221,7 +212,7 @@ This means, we can run an MCMC chain for each posterior of $\bdelta_1$, $(\bdelt
 \subsection{Coarse--graining the frequency grid}
 \label{subsec:coarse}
 Starting from equation (5), one could further `coarse-grain' the frequencies by dividing the set of Fourier frequencies into $N_c$ subsequent and disjoint subsets $J_h$, i.e., $\{f_1,\ldots,f_{N_l}\}=\cup_{h=1}^{N_c} J_h$, where each $J_h$ contains an odd number $N_h$ frequencies and $\bar{f}_h$ denotes the midpoint Fourier frequency of interval $J_h$.
-Instead of each individual $\Y(f_k), k=1,\ldots,N_l$, we use $\bar{\Y}_h=\sum_{f\in J_h} \Y(f)$, for $h=1,\ldots, N_c$. As the $\Y(f)$ are asymptotically independent and complex Wishart distributed, i.e., $\Y(f)\sim {\cal CW}(\S(f), N_b)$, the distribution of $\Y_h$ can be approximated by ${\cal CW}(\S(\bar{f}_h), N_b*N_h)$, but only under the assumption that the spectral density matrices $\S(f)$ for $f\in J_h$ are very close. (Note that the sum of independent complex Wishart distributions is complex Wishart but only if the scale matrices are identical. If they differ, the distribution can only  be characterised via its Laplace transform but does not have a closed-form density. [This is a mistake in Quentin's JCAP paper])
+Instead of each individual $\Y(f_k), k=1,\ldots,N_l$, we use $\bar{\Y}_h=\sum_{f\in J_h} \Y(f)$, for $h=1,\ldots, N_c$. As the $\Y(f)$ are asymptotically independent and complex Wishart distributed, i.e., $\Y(f)\sim {\cal CW}(\S(f), N_b)$, the distribution of $\Y_h$ can be approximated by ${\cal CW}(\S(\bar{f}_h), N_b*N_h)$, but only under the assumption that the spectral density matrices $\S(f)$ for $f\in J_h$ are very close. (Note that the sum of independent complex Wishart distributions is complex Wishart but only if the scale matrices are identical. If they differ, the distribution can only  be characterised via its Laplace transform but does not have a closed-form density. [is this a mistake in Quentin's JCAP paper?])
 So it is important to choose the length of the frequency intervals such that they don't contain peaks or abrupt changes of the spectrum.
 Then the likelihood in equation (\ref{eq:log-like}) can be approximated by
 \begin{eqnarray}\label{eq:log-like}
@@ -236,13 +227,12 @@ where we use the eigendecomposition of $\bar{\Y}_h=\sum_{\nu=1}^p \lambda^{(h)}_
 
 \subsection{P-spline Modeling}
 We model the frequency-dependent parameters using penalized B-splines. Specifically, we represent:
-\avi{patricio writes that i might have messed up the indicies. Need to double check.}
 \begin{align}
-\log \delta_{kj}^2 &= \sum_{m=1}^{M_k} B_m(f_j) w_{k,m}^{(\delta)} \label{eq:delta_spline}\\
-\Re[\theta_{kl}(f_j)] &= \sum_{m=1}^{M_{kl}} B_m(f_j) w_{kl,m}^{(\Re)} \label{eq:theta_re_spline}\\
-\Im[\theta_{kl}(f_j)] &= \sum_{m=1}^{M_{kl}} B_m(f_j) w_{kl,m}^{(\Im)} \label{eq:theta_im_spline}
+\log \delta_{jk}^2 &= \sum_{m=1}^{M_j} B_m(f_k) w_{j,m}^{(\delta)} \label{eq:delta_spline}\\
+\Re[\theta_{jl}(f_k)] &= \sum_{m=1}^{M_{jl}} B_m(f_k) w_{jl,m}^{(\Re)} \label{eq:theta_re_spline}\\
+\Im[\theta_{jl}(f_k)] &= \sum_{m=1}^{M_{jl}} B_m(f_k) w_{jl,m}^{(\Im)} \label{eq:theta_im_spline}
 \end{align}
-where $B_m(f_j)$ are B-spline basis functions evaluated at frequency $f_j$, $M_k$ and $M_{kl}$ are the numbers of basis functions for the diagonal and off-diagonal components respectively, and $w_{k,m}^{(\delta)}$, $w_{kl,m}^{(\Re)}$, $w_{kl,m}^{(\Im)}$ are the corresponding spline coefficients.
+where $B_m(f_k)$ are B-spline basis functions evaluated at frequency $f_k$, $M_j$ and $M_{jl}$ are the numbers of basis functions for the diagonal and off-diagonal components respectively, and $w_{j,m}^{(\delta)}$, $w_{jl,m}^{(\Re)}$, $w_{jl,m}^{(\Im)}$ are the corresponding spline coefficients.
 
 The B-spline basis functions are constructed using degree-$r$ polynomials with knots placed according to the data characteristics. The flexibility of each component can be controlled by choosing the number of basis functions and the knot placement strategy.
 
@@ -260,111 +250,14 @@ The penalty matrices $\bold{P}_j$ are constructed from finite differences of the
 
 The posterior distribution can be sampled using MCMC methods, with the Cholesky parameterization ensuring positive definiteness of the spectral density matrix throughout the sampling process.
 In our implementation, we use the No-U-Turn Sampler (NUTS) algorithm, which is well-suited for high-dimensional parameter spaces and efficiently explores the posterior distribution.
-
-\paragraph*{Computational complexity.}
-
-Let $N$ be the number of fine frequencies and $B$ the number of coarse elements ($B = N_\mathrm{low} + N_\mathrm{bins}$). 
-Precomputing the bin statistics requires $O(Np^2)$ operations (a single pass over the DFTs). 
-Each likelihood evaluation thereafter scales as the unbinned case but with $N$ replaced by $B$, i.e.
-\begin{equation}
-\mathcal{O}(Bp^2),
-\end{equation}
-for the quadratic forms, plus the cost of evaluating the spline fields, approximately $\mathcal{O}(BK)$ per parameter family (where $K$ is the number of basis functions). 
-For typical settings $B \ll N$, runtime is reduced by roughly $N/B$ while preserving the same likelihood structure.
-
-
-\section{Using Prior Knowledge of the LISA PSD and CSD}
-
-Assume that we know the LISA design spectral density matrix $S_0(f)$, from instrument modelling.  
-This matrix contains the expected auto-spectra (PSD) and cross-spectra (CSD) between channels, and its overall magnitude and structure are known to be physically reasonable.  
-We describe two simple ways to incorporate this information into the multivariate P-spline model.
-
-\subsection{Soft shrinkage toward the design spectrum}
-
-The idea is to let the estimated spectrum $S(f)$ stay close to $S_0(f)$ unless the data provide strong evidence that the true spectrum differs.
-
-Our model parameterises the inverse spectral matrix through the modified
-Cholesky decomposition
-$$\bold{S}(f_k)^{-1} = \bold{T}_k^* \bold{D}_k^{-1} \bold{T}_k$$
-where $\bold{D}_k(f)$ contains the innovation variances and $\bold{T}_k(f)$ contains the (off-diagonal) regression terms.  
-Both are represented as smooth P-spline functions.
-
-We compute the same decomposition for the known design spectrum,
-$$\bold{S}_0(f_k)^{-1} = \bold{T}_{0,k}^* \bold{D}_{0,k}^{-1} \bold{T}_{0,k}$$
-and then place simple Gaussian priors on the spline coefficients, centred at the design values.  
-For example,
-$$\text{spline coefficients of }\log\delta_j^2(f)
-   \sim \mathcal{N}\bigl(\text{design coefficients},\; \tau_{\delta,j}^2\bigr),$$
-and similarly for the off-diagonal terms $\theta_{jl}(f)$.
-Small values of $\tau$ keep the inferred PSD/CSD near the LISA design curve.
-Larger values let the data pull the estimate away more freely.  
-\color{teal}
-Could this be an easy and statistically safe way to ``regularise'' the fit using the known physics of the instrument?
-\color{black}
-
-\subsection{Hard upper/lower bounds on PSD and CSD}
-
-If we have physical bounds on the spectrum--for instance, known minimum/maximum levels that each auto-spectrum $S_{jj}(f)$ must lie within—these constraints can be imposed directly in the model.
-
-
-To guarantee that the estimated PSD stays within physically allowed
-limits, for example
-$$ L_j(f) \le S_{jj}(f) \le U_j(f),$$
-we replace the usual unconstrained spline model with a bounded reparameterisation.  
-Let $z_j(f)$ be any smooth spline function (with no constraints).  
-Although $z_j(f)$ is written as a spline expansion,
-$$
-  z_j(f) = \sum_k B_k(f)\, w_{jk},
-$$
-it is \emph{not} the log-PSD.  
-It is only an unconstrained latent variable.  
-The PSD is then constructed by mapping $z_j(f)$ into the allowed interval $[L_j(f), U_j(f)]$ using the logistic transform, $\sigma(x)=1/(1+e^{-x})$:
-$$
-  \log S_{jj}(f)
-    = \log L_j(f)
-      + \sigma\!\big(z_j(f)\big)\,
-        \big[\log U_j(f)-\log L_j(f)\big].
-$$
-Because $\sigma(z)\in(0,1)$ for all real $z$, the resulting PSD automatically satisfies the required bounds at every frequency, independently of the spline coefficients.  
-This allows prior knowledge of the physically allowed PSD range to be imposed in a simple and stable way.
-
-For the diagonal elements (PSD), one can restrict $\delta_j^2(f)$ to lie between frequency-dependent limits $a_j(f)$ and
-$b_j(f)$ derived from the LISA design model:
-$$  a_j(f) \le \delta_j^2(f) \le b_j(f).$$
-This can be done by reparameterising the spline representation using a logistic transform, which automatically keeps the values inside the allowed band.
-
-
-\avi{Ask renate and patrico for help for the cross spectra...}
-For the cross-spectra it might be more convenient to work with the complex coherence,
-$$
-  C_{lm}(f)
-    = \frac{S_{lm}(f)}
-           {\sqrt{S_{ll}(f)\,S_{mm}(f)}},
-\qquad
-  |C_{lm}(f)| \le 1.
-$$
-Modelling the CSD directly can violate this constraint and can lead to
-a non–positive-semidefinite spectral matrix.  Instead, we parameterise
-$C_{lm}(f)$ in polar form,
-$$
-  C_{lm}(f) = \tanh(r_{lm}(f))\,e^{i\phi_{lm}(f)},
-$$
-where $r_{lm}(f)$ and $\phi_{lm}(f)$ are unconstrained spline functions.  
-Since $\tanh(r)\in(-1,1)$ for all real $r$, this representation automatically enforces $|C_{lm}(f)|<1$ at every frequency. 
-The corresponding cross-spectrum is then constructed as
-$$
-  S_{lm}(f)
-    = C_{lm}(f)\,\sqrt{S_{ll}(f)\,S_{mm}(f)}.
-$$
-If the LISA design model provides a prior coherence curve $C_{0,lm}(f)$, we decompose it into magnitude and phase and place Gaussian priors on the spline coefficients of $r_{lm}(f)$ and $\phi_{lm}(f)$ centred at the design values.  
-This keeps the inferred coherence close to the physically motivated LISA model while allowing the data to make adjustments.
+\newpage
 
 
 \section{Computation}
 
 \avi{Again, these are just some notes -- dont expect to include this in the final draft, more just for Reante and Patricio to understand what I did}
 
-THe params to be sampled are the spline weights for the diagonal fields log $\delta_j(f)^2$ and the real/imaginary off‑diagonal Cholesky entries $\theta_{jl}(f)$, plus their hierarchical hyperparameters.
+The params to be sampled are the spline weights for the diagonal fields log $\delta_j(f)^2$ and the real/imaginary off‑diagonal Cholesky entries $\theta_{jl}(f)$, plus their hierarchical hyperparameters.
 
 We implement the model in JAX to leverage automatic differentiation and just-in-time (JIT) compilation for efficient gradient-based sampling.
 We use the NumPyro library, which provides a flexible framework for probabilistic programming and supports advanced MCMC algorithms.
@@ -518,7 +411,285 @@ This work was performed on the OzSTAR national facility at Swinburne University 
 
 \appendix
 
-\subsection{Generation of SCIRDv1 TDI--2 LISA Noise}
+
+\section{Why Avi thinks block 3 is going to be problematic}
+
+After the Cholesky parameterisation of the inverse spectral density,
+\begin{equation}
+S_k^{-1} = T_k^\dagger D_k^{-1} T_k ,
+\end{equation}
+the Whittle likelihood factorises into $p$ independent block likelihoods.
+For block $j$, the resulting likelihood can be written as
+\begin{equation}
+\mathcal{L}_j \propto
+\prod_{k=1}^N \delta_{jk}^{-2N_b}
+\exp\!\left(
+-\frac{1}{T\delta_{jk}^2}
+\sum_{\omega=1}^{N_b}
+\Bigl\|
+u_{j\omega}^{(k)} - \sum_{l<j} \theta_{jl}^{(k)} u_{l\omega}^{(k)}
+\Bigr\|^2
+\right),
+\end{equation}
+where $\delta_{jk}^2$ is the diagonal scale parameter for block $j$.
+
+Defining the frequency-wise residual power
+\begin{equation}
+R_{jk} \equiv
+\sum_{\omega=1}^{N_b}
+\Bigl\|
+u_{j\omega}^{(k)} - \sum_{l<j} \theta_{jl}^{(k)} u_{l\omega}^{(k)}
+\Bigr\|^2 ,
+\end{equation}
+and ignoring additive constants, the block log-likelihood becomes
+\begin{equation}
+\log \mathcal{L}_j
+=
+- N_b \sum_k \log \delta_{jk}^2
+- \sum_k \frac{R_{jk}}{\delta_{jk}^2}.
+\label{eq:block3_loglik}
+\end{equation}
+
+For block~$j=3$, we find that in some frequency bands the residual power is very small,
+\begin{equation}
+R_{3k} \approx 0 \quad \text{for many } k .
+\end{equation}
+In these regions the second term in Eq.~\eqref{eq:block3_loglik} has little effect, and the likelihood is dominated by
+\begin{equation}
+\log \mathcal{L}_3
+\approx
+- N_b \sum_k \log \delta_{3k}^2 .
+\end{equation}
+This expression increases without bound as $\delta_{3k}^2 \to 0$, so the likelihood prefers arbitrarily small values of $\delta_{3k}^2$ rather than a finite optimum.
+
+As a result, the posterior concentrates near the lower boundary of $\delta_{3k}^2$, regardless of the values of the regression coefficients $\theta_{3l}$.
+Unless the prior enforces a sufficiently strong lower bound on $\delta_{3k}^2$, the posterior will collapse toward zero variance.
+This creates a sharply curved posterior geometry, leading to poor sampling efficiency and pathological behaviour for HMC methods.
+
+\avi{I also tested emcee, things didnt work}
+
+
+
+
+
+\section{Renates gibbs update for the last block}
+
+
+\subsection{Background: Gaussian linear regression}
+
+Consider the standard Gaussian linear regression model
+\begin{equation}
+\mathbf{Y} = \mathbf{X}\boldsymbol{\beta} + \boldsymbol{\epsilon},
+\qquad
+\boldsymbol{\epsilon} \sim \mathcal{N}(\mathbf{0}, \mathbf{D}),
+\end{equation}
+with a Gaussian prior on the regression coefficients,
+\begin{equation}
+\boldsymbol{\beta} \sim \mathcal{N}(\mathbf{0}, \mathbf{V}).
+\end{equation}
+The conditional posterior distribution of $\boldsymbol{\beta}$ is then
+\begin{equation}
+\boldsymbol{\beta} \mid \mathbf{Y}
+\sim
+\mathcal{N}(\mathbf{m}_{\mathrm{post}}, \boldsymbol{\Sigma}_{\mathrm{post}}),
+\end{equation}
+where
+\begin{equation}
+\boldsymbol{\Sigma}_{\mathrm{post}}
+=
+\left(
+\mathbf{V}^{-1} + \mathbf{X}^{\top}\mathbf{D}^{-1}\mathbf{X}
+\right)^{-1},
+\qquad
+\mathbf{m}_{\mathrm{post}}
+=
+\boldsymbol{\Sigma}_{\mathrm{post}}
+\mathbf{X}^{\top}\mathbf{D}^{-1}\mathbf{Y}.
+\end{equation}
+
+\subsection{Complex conditional likelihood}
+
+We now derive a likelihood of the above form by conditioning on all
+parameters except the complex coefficient $Q(\Omega_{21})$.
+
+Define
+\begin{equation}
+Q(\Omega_{21})
+=
+\begin{pmatrix}
+\Re(\Omega_{21}) \\
+\Im(\Omega_{21})
+\end{pmatrix}.
+\end{equation}
+
+The likelihood contribution for block~2, viewed as a function of
+$Q(\Omega_{21})$ with all other quantities fixed at their current sampled
+values, is
+\begin{equation}
+\mathcal{L}_2
+\propto
+\prod_{k=1}^{N}
+\exp\!\left\{
+-\frac{1}{T S_{2k}^2}
+\sum_{q=1}^{p}
+\left|
+Q(u_{2q}^{(k)}) - \hat{W}(u_{2q}^{(k)})
+-
+\bigl(
+Q(\Omega_{21}) + i\,\Im(\Omega_{21})
+\bigr)
+\bigl(
+\Re(u_{1q}^{(k)}) + i\,\Im(u_{1q}^{(k)})
+\bigr)
+\right|^2
+\right\}.
+\end{equation}
+
+This expression is quadratic in $\Re(\Omega_{21})$ and $\Im(\Omega_{21})$.
+Expanding the squared modulus and grouping terms yields a sum of weighted
+squared residuals.
+
+\subsection{Effective means and variances}
+
+Define the inverse variances
+\begin{equation}
+\sigma_q^{(k)\,2}
+=
+\frac{1}{
+\Re(u_{1q}^{(k)})^2
++
+\Im(u_{1q}^{(k)})^2
+},
+\end{equation}
+and the corresponding conditional means
+\begin{equation}
+\mu_q^{(k)}
+=
+\frac{
+\Re(u_{2q}^{(k)}) \Re(u_{1q}^{(k)})
++
+\Im(u_{2q}^{(k)}) \Im(u_{1q}^{(k)})
++
+2\,\Re(u_{1q}^{(k)}) \Im(u_{1q}^{(k)}) \Im(u_{2q}^{(k)})
+}{
+\Re(u_{1q}^{(k)})^2
++
+\Im(u_{1q}^{(k)})^2
+}.
+\end{equation}
+
+With these definitions, the likelihood can be written as
+\begin{equation}
+\prod_{k=1}^{N}
+\exp\!\left[
+-\frac{1}{T S_{2k}^2}
+\sum_{q=1}^{p}
+\frac{
+\left(
+\Re(b_{2q}^{(k)}) - \mu_q^{(k)}
+\right)^2
+}{
+\sigma_q^{(k)\,2}
+}
+\right].
+\end{equation}
+
+\subsection{Factorisation over frequencies}
+
+Completing the square over $q$ for each frequency $k$ yields
+\begin{equation}
+\prod_{k=1}^{N}
+\exp\!\left[
+-\frac{1}{T S_{2k}^2}
+\frac{
+\left(
+\Re(b_{2k}^{(k)})
+-
+\sum_{q=1}^{p}
+\mu_q^{(k)} / \sigma_q^{(k)\,2}
+\right)^2
+}{
+\sum_{q=1}^{p}
+1 / \sigma_q^{(k)\,2}
+}
+\right].
+\end{equation}
+
+Define the effective response variable
+\begin{equation}
+y_k
+=
+\sum_{q=1}^{p}
+\frac{\mu_q^{(k)\,2}}{\sigma_q^{(k)\,2}},
+\end{equation}
+and the diagonal covariance
+\begin{equation}
+\mathbf{D}
+=
+\operatorname{diag}(d_1,\ldots,d_N),
+\qquad
+d_k
+=
+T S_{2k}^2
+\sum_{q=1}^{p}
+\frac{1}{\sigma_q^{(k)\,2}} .
+\end{equation}
+
+\subsection{Gaussian regression form}
+
+Identifying the real component with a linear model,
+\begin{equation}
+\Re(b_{2k})
+=
+\mathbf{X}\boldsymbol{\beta},
+\end{equation}
+we obtain
+\begin{equation}
+\mathbf{y}
+\sim
+\mathcal{N}
+\!\left(
+\mathbf{X}\boldsymbol{\beta},
+\operatorname{diag}
+\left(
+T S_{2k}^2
+\sum_{q=1}^{p}
+\frac{1}{\sigma_q^{(k)\,2}}
+\right)
+\right).
+\end{equation}
+
+This recovers the Gaussian regression form required for Gibbs sampling
+of $\boldsymbol{\beta}$ with conjugate updates.
+
+\subsection{Design matrix and prior}
+
+The design matrix is constructed from spline basis functions,
+\begin{equation}
+\mathbf{X}
+=
+\begin{pmatrix}
+B_1(f_1) & \cdots & B_H(f_1) \\
+\vdots  &        & \vdots  \\
+B_1(f_N) & \cdots & B_H(f_N)
+\end{pmatrix},
+\qquad
+\boldsymbol{\beta}
+=
+\begin{pmatrix}
+\omega_1 \\
+\vdots \\
+\omega_M
+\end{pmatrix},
+\end{equation}
+with prior covariance
+\begin{equation}
+\mathbf{V} = (\Phi^\top \Phi)^{-1}.
+\end{equation}
+
+
+
+\section{Generation of SCIRDv1 TDI--2 LISA Noise}
 \label{subsec:lisa_noise_generation}
 
 We generate synthetic LISA instrumental noise directly at the level of the 
@@ -665,6 +836,105 @@ Finally, inverse real FFTs are applied to the three channels to obtain the
 correlated TDI noise time series.
 Welch power-spectral estimates computed from these simulations
 reproduce the analytic TDI noise PSDs by construction.
+
+
+\section{Computational complexity.}
+
+Let $N$ be the number of fine frequencies and $B$ the number of coarse elements ($B = N_\mathrm{low} + N_\mathrm{bins}$). 
+Precomputing the bin statistics requires $O(Np^2)$ operations (a single pass over the DFTs). 
+Each likelihood evaluation thereafter scales as the unbinned case but with $N$ replaced by $B$, i.e.
+\begin{equation}
+\mathcal{O}(Bp^2),
+\end{equation}
+for the quadratic forms, plus the cost of evaluating the spline fields, approximately $\mathcal{O}(BK)$ per parameter family (where $K$ is the number of basis functions). 
+For typical settings $B \ll N$, runtime is reduced by roughly $N/B$ while preserving the same likelihood structure.
+
+
+\section{Using Prior Knowledge of the LISA PSD and CSD}
+
+Assume that we know the LISA design spectral density matrix $S_0(f)$, from instrument modelling.  
+This matrix contains the expected auto-spectra (PSD) and cross-spectra (CSD) between channels, and its overall magnitude and structure are known to be physically reasonable.  
+We describe two simple ways to incorporate this information into the multivariate P-spline model.
+
+\subsection{Soft shrinkage toward the design spectrum}
+
+The idea is to let the estimated spectrum $S(f)$ stay close to $S_0(f)$ unless the data provide strong evidence that the true spectrum differs.
+
+Our model parameterises the inverse spectral matrix through the modified
+Cholesky decomposition
+$$\bold{S}(f_k)^{-1} = \bold{T}_k^* \bold{D}_k^{-1} \bold{T}_k$$
+where $\bold{D}_k(f)$ contains the innovation variances and $\bold{T}_k(f)$ contains the (off-diagonal) regression terms.  
+Both are represented as smooth P-spline functions.
+
+We compute the same decomposition for the known design spectrum,
+$$\bold{S}_0(f_k)^{-1} = \bold{T}_{0,k}^* \bold{D}_{0,k}^{-1} \bold{T}_{0,k}$$
+and then place simple Gaussian priors on the spline coefficients, centred at the design values.  
+For example,
+$$\text{spline coefficients of }\log\delta_j^2(f)
+   \sim \mathcal{N}\bigl(\text{design coefficients},\; \tau_{\delta,j}^2\bigr),$$
+and similarly for the off-diagonal terms $\theta_{jl}(f)$.
+Small values of $\tau$ keep the inferred PSD/CSD near the LISA design curve.
+Larger values let the data pull the estimate away more freely.  
+\color{teal}
+Could this be an easy and statistically safe way to ``regularise'' the fit using the known physics of the instrument?
+\color{black}
+
+\subsection{Hard upper/lower bounds on PSD and CSD}
+
+If we have physical bounds on the spectrum--for instance, known minimum/maximum levels that each auto-spectrum $S_{jj}(f)$ must lie within—these constraints can be imposed directly in the model.
+
+
+To guarantee that the estimated PSD stays within physically allowed
+limits, for example
+$$ L_j(f) \le S_{jj}(f) \le U_j(f),$$
+we replace the usual unconstrained spline model with a bounded reparameterisation.  
+Let $z_j(f)$ be any smooth spline function (with no constraints).  
+Although $z_j(f)$ is written as a spline expansion,
+$$
+  z_j(f) = \sum_k B_k(f)\, w_{jk},
+$$
+it is \emph{not} the log-PSD.  
+It is only an unconstrained latent variable.  
+The PSD is then constructed by mapping $z_j(f)$ into the allowed interval $[L_j(f), U_j(f)]$ using the logistic transform, $\sigma(x)=1/(1+e^{-x})$:
+$$
+  \log S_{jj}(f)
+    = \log L_j(f)
+      + \sigma\!\big(z_j(f)\big)\,
+        \big[\log U_j(f)-\log L_j(f)\big].
+$$
+Because $\sigma(z)\in(0,1)$ for all real $z$, the resulting PSD automatically satisfies the required bounds at every frequency, independently of the spline coefficients.  
+This allows prior knowledge of the physically allowed PSD range to be imposed in a simple and stable way.
+
+For the diagonal elements (PSD), one can restrict $\delta_j^2(f)$ to lie between frequency-dependent limits $a_j(f)$ and
+$b_j(f)$ derived from the LISA design model:
+$$  a_j(f) \le \delta_j^2(f) \le b_j(f).$$
+This can be done by reparameterising the spline representation using a logistic transform, which automatically keeps the values inside the allowed band.
+
+
+\avi{Ask renate and patrico for help for the cross spectra...}
+For the cross-spectra it might be more convenient to work with the complex coherence,
+$$
+  C_{lm}(f)
+    = \frac{S_{lm}(f)}
+           {\sqrt{S_{ll}(f)\,S_{mm}(f)}},
+\qquad
+  |C_{lm}(f)| \le 1.
+$$
+Modelling the CSD directly can violate this constraint and can lead to
+a non–positive-semidefinite spectral matrix.  Instead, we parameterise
+$C_{lm}(f)$ in polar form,
+$$
+  C_{lm}(f) = \tanh(r_{lm}(f))\,e^{i\phi_{lm}(f)},
+$$
+where $r_{lm}(f)$ and $\phi_{lm}(f)$ are unconstrained spline functions.  
+Since $\tanh(r)\in(-1,1)$ for all real $r$, this representation automatically enforces $|C_{lm}(f)|<1$ at every frequency. 
+The corresponding cross-spectrum is then constructed as
+$$
+  S_{lm}(f)
+    = C_{lm}(f)\,\sqrt{S_{ll}(f)\,S_{mm}(f)}.
+$$
+If the LISA design model provides a prior coherence curve $C_{0,lm}(f)$, we decompose it into magnitude and phase and place Gaussian priors on the spline coefficients of $r_{lm}(f)$ and $\phi_{lm}(f)$ centred at the design values.  
+This keeps the inferred coherence close to the physically motivated LISA model while allowing the data to make adjustments.
 
 
 
