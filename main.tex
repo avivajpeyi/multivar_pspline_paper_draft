@@ -212,15 +212,15 @@ Hence Bayes' rule yields three independent posterior factors corresponding to $\
 \subsection{Coarse--graining the frequency grid}
 \label{subsec:coarse}
 Starting from equation (5), one could further `coarse-grain' the frequencies by dividing the set of Fourier frequencies into $N_c$ subsequent and disjoint subsets $J_h$, i.e., $\{f_1,\ldots,f_{N_l}\}=\cup_{h=1}^{N_c} J_h$, where each $J_h$ contains an odd number $N_h$ frequencies and $\bar{f}_h$ denotes the midpoint Fourier frequency of interval $J_h$.
-Instead of each individual $\Y(f_k), k=1,\ldots,N_l$, we use $\bar{\Y}_h=\sum_{f\in J_h} \Y(f)$, for $h=1,\ldots, N_c$. As the $\Y(f)$ are asymptotically independent and complex Wishart distributed, i.e., $\Y(f)\sim {\cal CW}(\S(f), N_b)$, the distribution of $\Y_h$ can be approximated by ${\cal CW}(\S(\bar{f}_h), N_b*N_h)$, but only under the assumption that the spectral density matrices $\S(f)$ for $f\in J_h$ are very close. (Note that the sum of independent complex Wishart distributions is complex Wishart but only if the scale matrices are identical. If they differ, the distribution can only  be characterised via its Laplace transform but does not have a closed-form density. [is this a mistake in Quentin's JCAP paper?])
+Instead of each individual $\Y(f_k), k=1,\ldots,N_l$, we use $\Y_h^{*}=\sum_{f\in J_h} \Y(f)$, for $h=1,\ldots, N_c$. As the $\Y(f)$ are asymptotically independent and complex Wishart distributed, i.e., $\Y(f)\sim {\cal CW}(\S(f), N_b)$, the distribution of $\Y_h$ can be approximated by ${\cal CW}(\S(\bar{f}_h), N_b*N_h)$, but only under the assumption that the spectral density matrices $\S(f)$ for $f\in J_h$ are very close. (Note that the sum of independent complex Wishart distributions is complex Wishart but only if the scale matrices are identical. If they differ, the distribution can only  be characterised via its Laplace transform but does not have a closed-form density. [is this a mistake in Quentin's JCAP paper?])
 So it is important to choose the length of the frequency intervals such that they don't contain peaks or abrupt changes of the spectrum.
 Then the likelihood in equation (\ref{eq:log-like}) can be approximated by
 \begin{eqnarray}\label{eq:log-like}
-  &\propto &   \prod_{h=1}^{N_c} \left|\S(\bar{f}_h)\right|^{-N_b*N_h} \exp\left(- \tr\left[ \S(\bar{f}_h)^{-1} \bar{\Y}_h\right]\right)\\
+  &\propto &   \prod_{h=1}^{N_c} \left|\S(\bar{f}_h)\right|^{-N_b*N_h} \exp\left(- \tr\left[ \S(\bar{f}_h)^{-1} \Y_h^{*}\right]\right)\\
  % &\propto &   \prod_{k=1}^{N_l} \left|\S(f_k)\right|^{-N_b} \exp\left(- %\sum_{\nu=1}^p\u_\nu^{(k)*}\S(f_k)^{-1}\u_\nu^{(k)}\right)
   &\propto &  \prod_{h=1}^{N_c} \left|\S(\bar{f}_h)\right|^{-N_b*N_h}  \exp\left(\sum_{\nu=1}^p-\u_\nu^{(h)*}\S(\bar{f}_h)^{-1}\u_\nu^{(h)}\right)
 \end{eqnarray}
-where we use the eigendecomposition of $\bar{\Y}_h=\sum_{\nu=1}^p \lambda^{(h)}_\nu \v^{(h)}_\nu\v^{(h)*}_\nu=\sum_{\nu=1}^p  \u^{(h)}_\nu\u^{(h)*}_\nu$ with $\u^{(h)}_\nu=\sqrt{\lambda^{(h)}_l}\v^{(h)}_\nu$. 
+where we use the eigendecomposition of $\Y_h^{*}=\sum_{\nu=1}^p \lambda^{(h)}_\nu \v^{(h)}_\nu\v^{(h)*}_\nu=\sum_{\nu=1}^p  \u^{(h)}_\nu\u^{(h)*}_\nu$ with $\u^{(h)}_\nu=\sqrt{\lambda^{(h)}_l}\v^{(h)}_\nu$. 
 
 
 
