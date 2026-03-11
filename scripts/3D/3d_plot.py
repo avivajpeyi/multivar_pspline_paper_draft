@@ -55,21 +55,34 @@ def _resolve_default_idatas(repo_root: Path) -> list[Path]:
     candidates_off = sorted(base.glob("seed_*_*/inference_data.nc"))
     candidates_cg_off = sorted(base.glob("seed_*_*_cgOFF/inference_data.nc"))
     candidates_cg_on = sorted(base.glob("seed_*_*_cgNH*/inference_data.nc"))
+    candidates_cg_off_npz = sorted(base.glob("seed_*_*_cgOFF/compact_ci_curves.npz"))
+    candidates_cg_on_npz = sorted(base.glob("seed_*_*_cgNH*/compact_ci_curves.npz"))
+    candidates_off_npz = sorted(base.glob("seed_*_*/compact_ci_curves.npz"))
 
     if candidates_cg_off and candidates_cg_on:
         return [candidates_cg_off[0], candidates_cg_on[0]]
 
+    if candidates_cg_off_npz and candidates_cg_on_npz:
+        return [candidates_cg_off_npz[0], candidates_cg_on_npz[0]]
+
     if candidates_off:
         return [candidates_off[0]]
 
+    if candidates_off_npz:
+        return [candidates_off_npz[0]]
+
     raise FileNotFoundError(
-        "Could not find any inference_data.nc under docs/studies/multivar_psd/out_var3."
+        "Could not find inference_data.nc or compact_ci_curves.npz under "
+        "docs/studies/multivar_psd/out_var3."
     )
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Create paper plot from one or more 3D VAR(2) InferenceData files."
+        description=(
+            "Create paper plot from one or more 3D VAR(2) outputs. "
+            "Each input may be inference_data.nc or compact_ci_curves.npz."
+        )
     )
     parser.add_argument(
         "--idata",
@@ -77,8 +90,8 @@ def parse_args() -> argparse.Namespace:
         nargs="+",
         default=None,
         help=(
-            "One or more paths to inference_data.nc. "
-            "Example: --idata off.nc on.nc"
+            "One or more paths to inference_data.nc or compact_ci_curves.npz. "
+            "Example: --idata off.nc on.npz"
         ),
     )
     parser.add_argument(
@@ -94,7 +107,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output",
         type=str,
-        default="docs/manuscript/figures/var3_simulation_idata_overlay.png",
+        default="var3_simulation_idata_overlay.png",
         help="Output figure path.",
     )
     parser.add_argument(
@@ -117,7 +130,109 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def _reconstruct_quantiles_from_compact(data) -> tuple[np.ndarray, ...]:
+    """Rebuild full (F, P, P) quantile arrays from compact diag/offdiag format."""
+    freq = np.asarray(data["freq"], dtype=np.float64)
+    diag_q05 = np.asarray(data["psd_diag_q05"], dtype=np.float64)
+    diag_q50 = np.asarray(data["psd_diag_q50"], dtype=np.float64)
+    diag_q95 = np.asarray(data["psd_diag_q95"], dtype=np.float64)
+    off_re_q05 = np.asarray(data["psd_offre_q05"], dtype=np.float64)
+    off_re_q50 = np.asarray(data["psd_offre_q50"], dtype=np.float64)
+    off_re_q95 = np.asarray(data["psd_offre_q95"], dtype=np.float64)
+    off_im_q05 = np.asarray(data["psd_offim_q05"], dtype=np.float64)
+    off_im_q50 = np.asarray(data["psd_offim_q50"], dtype=np.float64)
+    off_im_q95 = np.asarray(data["psd_offim_q95"], dtype=np.float64)
+    pairs = np.asarray(data["offdiag_pairs"], dtype=int)
+
+    p = int(diag_q50.shape[1])
+    f = int(freq.size)
+
+    q05_real = np.zeros((f, p, p), dtype=np.float64)
+    q50_real = np.zeros((f, p, p), dtype=np.float64)
+    q95_real = np.zeros((f, p, p), dtype=np.float64)
+    q05_imag = np.zeros((f, p, p), dtype=np.float64)
+    q50_imag = np.zeros((f, p, p), dtype=np.float64)
+    q95_imag = np.zeros((f, p, p), dtype=np.float64)
+
+    diag_idx = np.arange(p)
+    q05_real[:, diag_idx, diag_idx] = diag_q05
+    q50_real[:, diag_idx, diag_idx] = diag_q50
+    q95_real[:, diag_idx, diag_idx] = diag_q95
+
+    for k, (i, j) in enumerate(pairs):
+        q05_real[:, i, j] = off_re_q05[:, k]
+        q50_real[:, i, j] = off_re_q50[:, k]
+        q95_real[:, i, j] = off_re_q95[:, k]
+
+        q05_real[:, j, i] = off_re_q05[:, k]
+        q50_real[:, j, i] = off_re_q50[:, k]
+        q95_real[:, j, i] = off_re_q95[:, k]
+
+        q05_imag[:, j, i] = off_im_q05[:, k]
+        q50_imag[:, j, i] = off_im_q50[:, k]
+        q95_imag[:, j, i] = off_im_q95[:, k]
+
+        q05_imag[:, i, j] = -off_im_q05[:, k]
+        q50_imag[:, i, j] = -off_im_q50[:, k]
+        q95_imag[:, i, j] = -off_im_q95[:, k]
+
+    return freq, q05_real, q50_real, q95_real, q05_imag, q50_imag, q95_imag
+
+
+def _load_summary_from_npz(npz_path: Path) -> dict:
+    with np.load(npz_path, allow_pickle=False) as data:
+        freq = np.asarray(data["freq"], dtype=np.float64)
+
+        if all(
+            key in data
+            for key in (
+                "psd_real_q05",
+                "psd_real_q50",
+                "psd_real_q95",
+                "psd_imag_q05",
+                "psd_imag_q50",
+                "psd_imag_q95",
+            )
+        ):
+            q05_real = np.asarray(data["psd_real_q05"], dtype=np.float64)
+            q50_real = np.asarray(data["psd_real_q50"], dtype=np.float64)
+            q95_real = np.asarray(data["psd_real_q95"], dtype=np.float64)
+            q05_imag = np.asarray(data["psd_imag_q05"], dtype=np.float64)
+            q50_imag = np.asarray(data["psd_imag_q50"], dtype=np.float64)
+            q95_imag = np.asarray(data["psd_imag_q95"], dtype=np.float64)
+        else:
+            (
+                freq,
+                q05_real,
+                q50_real,
+                q95_real,
+                q05_imag,
+                q50_imag,
+                q95_imag,
+            ) = _reconstruct_quantiles_from_compact(data)
+
+        periodogram = None
+        if "periodogram_real" in data and "periodogram_imag" in data:
+            periodogram = np.asarray(data["periodogram_real"], dtype=np.float64) + 1j * np.asarray(
+                data["periodogram_imag"], dtype=np.float64
+            )
+
+    return {
+        "freq": freq,
+        "q05_real": q05_real,
+        "q50_real": q50_real,
+        "q95_real": q95_real,
+        "q05_imag": q05_imag,
+        "q50_imag": q50_imag,
+        "q95_imag": q95_imag,
+        "periodogram": periodogram,
+    }
+
+
 def _load_summary(idata_path: Path) -> dict:
+    if idata_path.suffix.lower() == ".npz":
+        return _load_summary_from_npz(idata_path)
+
     idata = az.from_netcdf(idata_path)
     if not hasattr(idata, "posterior_psd"):
         raise ValueError(f"{idata_path} has no posterior_psd group.")
@@ -131,7 +246,6 @@ def _load_summary(idata_path: Path) -> dict:
     psd_imag = np.asarray(psd_group["psd_matrix_imag"].values, dtype=np.float64)
 
     summary = {
-        "idata": idata,
         "freq": freq,
         "q05_real": _nearest_percentile(psd_real, percentiles, 5.0),
         "q50_real": _nearest_percentile(psd_real, percentiles, 50.0),
@@ -430,7 +544,7 @@ def main() -> int:
     if output_path.suffix.lower() == ".pdf":
         fig.savefig(output_path.with_suffix(".png"), dpi=220, bbox_inches="tight")
 
-    print("Loaded InferenceData files:")
+    print("Loaded input files:")
     for p in idata_paths:
         print(f"  - {p}")
     print(f"Saved figure: {output_path}")
