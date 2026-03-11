@@ -365,6 +365,75 @@ Runtime grows approximately linearly in $K$, consistent with the dominant operat
 Note there may be constant overheads due to data transfer, and the first invocation includes one-off JIT compilation time. 
 In practice, this predictable scaling allows one to choose $K$ based on accuracy considerations (cf. Figure~\ref{fig:riae_vs_k}) knowing that wall-clock cost will increase nearly proportionally.
 
+\subsection{Simulation study: 3D VAR(2)}
+\label{subsec:sim_3d_var2}
+
+For additional validation in the three-channel setting, we simulate from a
+three-dimensional VAR(2) process,
+\begin{align}
+\mathbf{X}_t = A_1 \mathbf{X}_{t-1} + A_2 \mathbf{X}_{t-2} + \boldsymbol{\varepsilon}_t, \qquad
+\boldsymbol{\varepsilon}_t \sim \mathcal{N}(\mathbf{0}, \Sigma),
+\end{align}
+with
+\begin{align}
+A_1 &= \mathrm{diag}(0.4, 0.3, 0.2), \\
+A_2 &=
+\begin{bmatrix}
+-0.2 & 0.5 & 0.0 \\
+0.4 & -0.1 & 0.0 \\
+0.0 & 0.0 & -0.1
+\end{bmatrix}, \\
+\Sigma &=
+\begin{bmatrix}
+0.25 & 0.00 & 0.08 \\
+0.00 & 0.25 & 0.08 \\
+0.08 & 0.08 & 0.25
+\end{bmatrix}.
+\end{align}
+The one-sided theoretical spectral density matrix is
+\begin{align}
+\mathbf{S}(f) = \frac{2}{f_s}\,H(f)\,\Sigma\,H(f)^*, \qquad
+H(f)=\left(I-\sum_{\ell=1}^{2}A_\ell e^{-i2\pi f\ell/f_s}\right)^{-1}.
+\end{align}
+
+\avi{Ask jianan to check -- im pretty sure, its basically the same as the hu and prado paper. }
+
+We generate 100 independent realisations with fixed length $n=16{,}384$,
+(burn-in 512 time points), and sampling frequency $f_s=1$. For each realisation we fit the
+multivariate P-spline model with $K=10$ knots, degree-2 splines, second-order
+difference penalties, blocked likelihood ($N_b=4$), coarse-graining ($N_h=4$),
+and NUTS (4 chains, 4000 warm-up and 4000 posterior samples per chain).
+The blocked and coarse-grained likelihood reduces the number of frequencies from $N_l=8192$ to $N_c=2048$, 
+which speeds up inference by a factor of $\approx 4$ without noticeable loss of
+ accuracy in this case (see Section~\ref{subsec:coarse} for details, we run a few analysis with no-coarse graining).
+
+Matrix RIAE is computed as above using the Frobenius norm and Simpson integration.
+Coverage is computed from pointwise 90\% credible bands (5th--95th percentiles).
+\avi{Some more details... for each frequency and spectral matrix instance we check whether the true spectral value lies
+inside the interval, then average these across all frequencies and 100 instances.
+For complex off-diagonal entries, the coverage check is performed on the real-valued
+matrix representation used in diagnostics (upper triangle uses real parts, lower
+triangle uses imaginary parts).
+
+Across 100 runs, we obtain
+\[
+\text{RIAE} = 0.0561 \pm 0.0073, \qquad
+\text{Coverage} = 0.4744 \pm 0.0358.
+\]
+The corresponding mean 90\% interval widths are
+$0.0659\pm0.0015$ for PSD diagonal entries,
+$0.0527\pm0.0015$ for PSD off-diagonal entries, and
+$0.0386\pm0.0010$ for off-diagonal coherence.
+\avi{I think im confused... why the coherence coverage different from the off-diagnonal coverage?...}
+
+
+\begin{figure}
+  \centering
+  \includegraphics[width=1\linewidth]{figures/var3_simulation_idata.png}
+  \caption{Three-dimensional VAR(2): posterior median (solid) and 90\% credible bands for the full $3 \times 3$ spectral density matrix. Diagonal elements show PSD estimates; off-diagonal elements display real and imaginary parts of cross-spectra. The model recovers both auto- and cross-spectral structure with appropriate uncertainty quantification.}
+  \label{fig:var3_simulation_idata}
+\end{figure}
+
 
 \subsection{LISA }
 \begin{figure}
