@@ -409,17 +409,13 @@ which speeds up inference by a factor of $\approx 4$ without noticeable loss of
 
 Matrix RIAE is computed as above using the Frobenius norm and Simpson integration.
 Coverage is computed from pointwise 90\% credible bands (5th--95th percentiles).
-\avi{Some more details... for each frequency and spectral matrix instance we check whether the true spectral value lies
+\avi{Some more details...} for each frequency and spectral matrix instance we check whether the true spectral value lies
 inside the interval, then average these across all frequencies and 100 instances.
 For complex off-diagonal entries, the coverage check is performed on the real-valued
 matrix representation used in diagnostics (upper triangle uses real parts, lower
 triangle uses imaginary parts).
 
-Across 100 runs, we obtain
-\[
-\text{RIAE} = 0.0561 \pm 0.0073, \qquad
-\text{Coverage} = 0.4744 \pm 0.0358.
-\]
+Across 100 runs, we obtain $\text{RIAE} = 0.0561 \pm 0.0073$, $\text{Coverage} = 0.4744 \pm 0.0358.$.
 The corresponding mean 90\% interval widths are
 $0.0659\pm0.0015$ for PSD diagonal entries,
 $0.0527\pm0.0015$ for PSD off-diagonal entries, and
@@ -429,8 +425,8 @@ $0.0386\pm0.0010$ for off-diagonal coherence.
 
 \begin{figure}
   \centering
-  \includegraphics[width=1\linewidth]{figures/var3_simulation_idata.png}
-  \caption{Three-dimensional VAR(2): posterior median (solid) and 90\% credible bands for the full $3 \times 3$ spectral density matrix. Diagonal elements show PSD estimates; off-diagonal elements display real and imaginary parts of cross-spectra. The model recovers both auto- and cross-spectral structure with appropriate uncertainty quantification.}
+  \includegraphics[width=1\linewidth]{figures/var3d_simulation_idata.png}
+  \caption{Three-dimensional VAR(2): posterior median (solid) and 90\% credible bands for the full $3 \times 3$ spectral density matrix. Diagonal elements show PSD estimates; off-diagonal elements display real and imaginary parts of cross-spectra. The model recovers both diagonal and off-diagonal spectral structure with appropriate uncertainty quantification.}
   \label{fig:var3_simulation_idata}
 \end{figure}
 
@@ -947,6 +943,17 @@ Larger values let the data pull the estimate away more freely.
 \color{teal}
 Could this be an easy and statistically safe way to ``regularise'' the fit using the known physics of the instrument?
 \color{black}
+
+For demonstration, look at figure~\ref{fig:shrinkage}.
+
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.95\linewidth]{figures/design_vs_no_design_comparison.png}
+    \caption{Example of shrinkage in action}
+    \label{fig:shrinkage}
+\end{figure}
+
 
 \subsection{Hard upper/lower bounds on PSD and CSD}
 
