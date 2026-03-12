@@ -50,6 +50,47 @@ def _nearest_percentile(values: np.ndarray, percentiles: np.ndarray, q: float) -
     return np.asarray(values[idx], dtype=np.float64)
 
 
+def _interp_complex_matrix_to_freq(
+    source_freq: np.ndarray,
+    target_freq: np.ndarray,
+    source_matrix: np.ndarray,
+) -> np.ndarray:
+    """Interpolate complex matrix-valued spectrum from source to target frequency grid."""
+    source_freq = np.asarray(source_freq, dtype=np.float64)
+    target_freq = np.asarray(target_freq, dtype=np.float64)
+    source_matrix = np.asarray(source_matrix)
+
+    if source_matrix.ndim != 3:
+        raise ValueError(f"Expected matrix with shape (F, C, C); got {source_matrix.shape}.")
+    if source_matrix.shape[0] != source_freq.size:
+        raise ValueError(
+            "Frequency and matrix length mismatch: "
+            f"{source_freq.size} vs {source_matrix.shape[0]}."
+        )
+
+    n_target = int(target_freq.size)
+    n_channels = int(source_matrix.shape[1])
+    out = np.empty((n_target, n_channels, n_channels), dtype=np.complex128)
+    for i in range(n_channels):
+        for j in range(n_channels):
+            re = np.interp(
+                target_freq,
+                source_freq,
+                np.real(source_matrix[:, i, j]),
+                left=np.nan,
+                right=np.nan,
+            )
+            im = np.interp(
+                target_freq,
+                source_freq,
+                np.imag(source_matrix[:, i, j]),
+                left=np.nan,
+                right=np.nan,
+            )
+            out[:, i, j] = re + 1j * im
+    return out
+
+
 def _resolve_default_idatas(repo_root: Path) -> list[Path]:
     base = repo_root / "docs/manuscript/scripts/3D/out_var3"
 
@@ -114,13 +155,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output",
         type=str,
-        default="var3_simulation_idata_overlay.png",
+        default="var3_simulation_residual_ci_overlay.png",
         help="Output figure path.",
     )
     parser.add_argument(
         "--with-true",
         action="store_true",
-        help="Overlay theoretical true VAR(2) spectrum used in 3d_study.py.",
+        help="Use theoretical true VAR(2) spectrum from 3d_study.py when truth is not in inputs.",
     )
     parser.add_argument(
         "--xmax",
@@ -309,7 +350,7 @@ def _load_summary(idata_path: Path) -> dict:
 
 def main() -> int:
     args = parse_args()
-    repo_root = Path(__file__).resolve().parents[4]
+    repo_root = Path(__file__).resolve().parents[3]
 
     if args.idata:
         idata_paths = []
@@ -343,12 +384,10 @@ def main() -> int:
 
     colors = ["tab:blue", "tab:orange", "tab:green", "tab:red"]
     fill_alphas = [0.4, 0.4, 0.4, 0.4]
-    line_widths = [1.8, 1.8, 1.5, 1.5]
 
     # Use first dataset for channel dimensions.
     first = summaries[0]
     n_channels = first["q50_real"].shape[1]
-    periodogram = next((s["periodogram"] for s in summaries if s["periodogram"] is not None), None)
 
     truth_summary = next((s for s in summaries if s.get("truth") is not None), None)
     if truth_summary is not None:
@@ -384,6 +423,38 @@ def main() -> int:
         true_psd_dense = None
         freq_dense = None
 
+    residual_summaries = []
+    for s in summaries:
+        freq = np.asarray(s["freq"], dtype=np.float64)
+        truth = s.get("truth")
+        truth_freq = freq
+
+        if truth is None:
+            if true_psd_dense is None or freq_dense is None:
+                raise ValueError(
+                    "Residual plotting requires truth spectra. Provide npz files with "
+                    "truth_real/truth_imag, or use --with-true to synthesize VAR(2) truth."
+                )
+            truth = true_psd_dense
+            truth_freq = freq_dense
+
+        if truth.shape[0] != freq.size or not np.array_equal(np.asarray(truth_freq), freq):
+            truth_on_freq = _interp_complex_matrix_to_freq(truth_freq, freq, truth)
+        else:
+            truth_on_freq = np.asarray(truth, dtype=np.complex128)
+
+        residual_summaries.append(
+            {
+                "freq": freq,
+                "r05_real": s["q05_real"] - np.real(truth_on_freq),
+                "r50_real": s["q50_real"] - np.real(truth_on_freq),
+                "r95_real": s["q95_real"] - np.real(truth_on_freq),
+                "r05_imag": s["q05_imag"] - np.imag(truth_on_freq),
+                "r50_imag": s["q50_imag"] - np.imag(truth_on_freq),
+                "r95_imag": s["q95_imag"] - np.imag(truth_on_freq),
+            }
+        )
+
     fig, axes = plt.subplots(
         n_channels,
         n_channels,
@@ -396,16 +467,14 @@ def main() -> int:
 
     all_re_candidates: list[np.ndarray] = []
     all_im_candidates: list[np.ndarray] = []
-    re_obs_candidates: list[np.ndarray] = []
-    im_obs_candidates: list[np.ndarray] = []
 
-    global_xmin = min(float(np.min(s["freq"])) for s in summaries)
-    global_xmax = max(float(np.max(s["freq"])) for s in summaries)
+    global_xmin = min(float(np.min(s["freq"])) for s in residual_summaries)
+    global_xmax = max(float(np.max(s["freq"])) for s in residual_summaries)
     x_min = global_xmin
     x_max = float(args.xmax) if args.xmax is not None else global_xmax
     x_max = min(x_max, global_xmax)
 
-    for s in summaries:
+    for s in residual_summaries:
         freq = s["freq"]
         x_mask = (freq >= x_min) & (freq <= x_max)
         if not np.any(x_mask):
@@ -416,40 +485,23 @@ def main() -> int:
                 if i <= j:
                     all_re_candidates.extend(
                         [
-                            s["q05_real"][:, i, j][x_mask],
-                            s["q50_real"][:, i, j][x_mask],
-                            s["q95_real"][:, i, j][x_mask],
+                            s["r05_real"][:, i, j][x_mask],
+                            s["r50_real"][:, i, j][x_mask],
+                            s["r95_real"][:, i, j][x_mask],
                         ]
                     )
                 else:
                     all_im_candidates.extend(
                         [
-                            s["q05_imag"][:, i, j][x_mask],
-                            s["q50_imag"][:, i, j][x_mask],
-                            s["q95_imag"][:, i, j][x_mask],
+                            s["r05_imag"][:, i, j][x_mask],
+                            s["r50_imag"][:, i, j][x_mask],
+                            s["r95_imag"][:, i, j][x_mask],
                         ]
                     )
 
-    if periodogram is not None:
-        freq0 = first["freq"]
-        x_mask0 = (freq0 >= x_min) & (freq0 <= x_max)
-        for i in range(n_channels):
-            for j in range(n_channels):
-                if i <= j:
-                    re_obs_candidates.append(np.real(periodogram[:, i, j])[x_mask0])
-                else:
-                    im_obs_candidates.append(np.imag(periodogram[:, i, j])[x_mask0])
-
-    if true_psd_dense is not None:
-        truth_mask = (freq_dense >= x_min) & (freq_dense <= x_max)
-        for i in range(n_channels):
-            for j in range(n_channels):
-                if i <= j:
-                    all_re_candidates.append(np.real(true_psd_dense[:, i, j])[truth_mask])
-                else:
-                    all_im_candidates.append(np.imag(true_psd_dense[:, i, j])[truth_mask])
-
     def _global_limits(candidates: list[np.ndarray], symmetric: bool) -> tuple[float, float]:
+        if not candidates:
+            return (-1.0, 1.0) if symmetric else (0.0, 1.0)
         vals = np.concatenate([np.ravel(c) for c in candidates if c.size])
         vals = vals[np.isfinite(vals)]
         if vals.size == 0:
@@ -465,59 +517,14 @@ def main() -> int:
         pad = 0.08 * (hi - lo)
         return lo - pad, hi + pad
 
-    re_ylim = _global_limits(
-        re_obs_candidates if re_obs_candidates else all_re_candidates,
-        symmetric=False,
-    )
-    im_ylim = _global_limits(
-        im_obs_candidates if im_obs_candidates else all_im_candidates,
-        symmetric=True,
-    )
+    re_ylim = _global_limits(all_re_candidates, symmetric=True)
+    im_ylim = _global_limits(all_im_candidates, symmetric=True)
 
     for i in range(n_channels):
         for j in range(n_channels):
             ax = axes[i, j]
 
-            if periodogram is not None:
-                freq_obs = first["freq"]
-                step = max(1, int(args.decimate))
-                idx_obs = np.arange(0, freq_obs.size, step, dtype=int)
-                if idx_obs[-1] != freq_obs.size - 1:
-                    idx_obs = np.append(idx_obs, freq_obs.size - 1)
-
-                obs_arr = (
-                    np.real(periodogram[:, i, j])
-                    if i <= j
-                    else np.imag(periodogram[:, i, j])
-                )
-                ax.plot(
-                    freq_obs[idx_obs],
-                    obs_arr[idx_obs],
-                    color="0.82",
-                    lw=0.7,
-                    alpha=0.9,
-                    zorder=-10,
-                    label="Periodogram" if (i == 0 and j == 0) else None,
-                )
-
-            if true_psd_dense is not None:
-                truth_arr = (
-                    np.real(true_psd_dense[:, i, j])
-                    if i <= j
-                    else np.imag(true_psd_dense[:, i, j])
-                )
-                ax.plot(
-                    freq_dense,
-                    truth_arr,
-                    color="k",
-                    lw=2.0,
-                    ls="--",
-                    zorder=2,
-                    alpha=0.85,
-                    label="True PSD" if (i == 0 and j == 0) else None,
-                )
-
-            for k, (s, label) in enumerate(zip(summaries, labels)):
+            for k, (s, label) in enumerate(zip(residual_summaries, labels)):
                 freq = s["freq"]
                 step = max(1, int(args.decimate))
                 idx = np.arange(0, freq.size, step, dtype=int)
@@ -525,15 +532,23 @@ def main() -> int:
                     idx = np.append(idx, freq.size - 1)
 
                 if i <= j:
-                    lower = s["q05_real"][:, i, j]
-                    median = s["q50_real"][:, i, j]
-                    upper = s["q95_real"][:, i, j]
-                    ylabel = r"$\Re\{S_{%d%d}(f)\}$" % (i + 1, j + 1)
+                    lower = s["r05_real"][:, i, j]
+                    upper = s["r95_real"][:, i, j]
+                    ylabel = r"$\Re\{S_{%d%d}(f)-S^{\mathrm{true}}_{%d%d}(f)\}$" % (
+                        i + 1,
+                        j + 1,
+                        i + 1,
+                        j + 1,
+                    )
                 else:
-                    lower = s["q05_imag"][:, i, j]
-                    median = s["q50_imag"][:, i, j]
-                    upper = s["q95_imag"][:, i, j]
-                    ylabel = r"$\Im\{S_{%d%d}(f)\}$" % (i + 1, j + 1)
+                    lower = s["r05_imag"][:, i, j]
+                    upper = s["r95_imag"][:, i, j]
+                    ylabel = r"$\Im\{S_{%d%d}(f)-S^{\mathrm{true}}_{%d%d}(f)\}$" % (
+                        i + 1,
+                        j + 1,
+                        i + 1,
+                        j + 1,
+                    )
 
                 ax.fill_between(
                     freq[idx],
@@ -543,35 +558,17 @@ def main() -> int:
                     alpha=fill_alphas[k % len(fill_alphas)],
                     linewidth=0.0,
                     zorder=3 + k,
-                    label=f"{label} 90% CI" if (i == 0 and j == 0) else None,
+                    label=f"{label} residual 90% CI" if (i == 0 and j == 0) else None,
                 )
-                # ax.plot(
-                #     freq[idx],
-                #     median[idx],
-                #     color=colors[k % len(colors)],
-                #     lw=line_widths[k % len(line_widths)],
-                #     zorder=6 + k,
-                #     alpha=0.95,
-                #     label=f"{label} median" if (i == 0 and j == 0) else None,
-                # )
 
             ax.set_xlim(x_min, x_max)
             if i <= j:
                 ax.set_ylim(*re_ylim)
             else:
                 ax.set_ylim(*im_ylim)
-                ax.axhline(0.0, color="0.35", lw=0.7, alpha=0.7, zorder=2)
                 ax.set_facecolor((0.96, 0.96, 0.96))
 
-            panel_key = (i + 1, j + 1)
-            if panel_key in {(1, 1), (2, 2)}:
-                ax.set_ylim(0.0, 3.0)
-            elif panel_key in {(1, 3), (2, 3)}:
-                ax.set_ylim(-0.5, 1.0)
-            elif panel_key == (3, 3):
-                ax.set_ylim(0.0, 1.5)
-            elif panel_key in {(3, 1), (3, 2)}:
-                ax.set_ylim(-0.25, 0.5)
+            ax.axhline(0.0, color="0.35", lw=0.7, alpha=0.7, zorder=2)
 
             ax.grid(alpha=0.25, linewidth=0.5)
             if i == n_channels - 1:
