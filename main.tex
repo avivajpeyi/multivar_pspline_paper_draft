@@ -135,8 +135,7 @@
 	the Fourier transform of the time-invariant autocovariance function $\Gamma(h)=
 	\left( \gamma_{lm}(h)\right)=\mathbb{E}(\Z_{t}\Z_{t+h}^{\intercal})$ that in turn
 	defines the Toeplitz covariance matrix of $\Z$. This asymptotic Gaussian
-	distribution is the basis of the multivariate Whittle likelihood approximation
-	in the frequency domain, expressed as ...
+	distribution is the basis of the multivariate Whittle likelihood.
 
 	The multivariate Whittle likelihood is given by
 	\begin{align}
@@ -157,11 +156,7 @@
 		\label{eq:block_lnl}\mathcal{L}_{b}(\d|\S) = \prod^{N_b}_{i=1}\mathcal{L}(\d^{(i)}
 		|\S) \ .
 	\end{equation}
-	Now, the blocked Whittle likelihood can be simplified by using the trace
-	rotation rule to\\
-	%for the product of  square matrices (where the trace of a matrix is the sum of its diagonal elements, i.e., $\textrm{tr}(A)=\sum_{i=1}^n a_{ii}$), namely
-	%$\tr(A B C)=\tr(BC A)=\tr(C A B)$.
-	$\mathcal{L}(\d^{(i)}|\S)$
+	Applying the trace rotation rule $\tr(ABC)=\tr(BCA)=\tr(CAB)$ to the exponent, $\mathcal{L}(\d^{(i)}|\S)$ simplifies as
 	\begin{eqnarray*}
 		&\propto & \prod_{k=1}^{N_l} \left|\S(f_k)\right|^{-N_b} \exp\left(- \sum_{i=1}^{N_b}
 		\tr\left[\d^{(i)}(f_k)^* \S(f_k)^{-1} \d^{(i)}(f_k)\right]\right)\\ &\propto &
@@ -281,20 +276,15 @@
 	$\Y_{h}^{*}=\sum_{f\in J_h}\Y(f)$, for $h=1,\ldots, N_{c}$. As the $\Y(f)$ are
 	asymptotically independent and complex Wishart distributed, i.e., $\Y(f)\sim{\cal CW}
 	(\S(f), N_{b})$, the distribution of $\Y_{h}$ can be approximated by
-	${\cal CW}(\S(\bar{f}_{h}), N_{b}*N_{h})$, but only under the assumption that the
-	spectral density matrices $\S(f)$ for $f\in J_{h}$ are very close. (Note that the
-	sum of independent complex Wishart distributions is complex Wishart but only if
-	the scale matrices are identical. If they differ, the distribution can only be characterised
-	via its Laplace transform but does not have a closed-form density. [is this a mistake
-	in Quentin's JCAP paper?]) So it is important to choose the length of the
-	frequency intervals such that they don't contain peaks or abrupt changes of
-	the spectrum. Then the likelihood in equation (\ref{eq:log-like}) can be approximated
+	${\cal CW}(\S(\bar{f}_{h}), N_{b} N_{h})$, under the assumption that $\S(f)$ is
+	approximately constant over $J_{h}$.\avi{verify: sum of CW with different scale matrices is not CW — check against Quentin JCAP}
+	It is therefore important to choose intervals that do not span peaks or abrupt spectral changes. Then the likelihood in equation (\ref{eq:log-like}) can be approximated
 	by
 	\begin{eqnarray}
-		\label{eq:log-like} &\propto & \prod_{h=1}^{N_c} \left|\S(\bar{f}_h)\right|^{-N_b*N_h}
+		\label{eq:log-like} &\propto & \prod_{h=1}^{N_c} \left|\S(\bar{f}_h)\right|^{-N_b N_h}
 		\exp\left(- \tr\left[ \S(\bar{f}_h)^{-1} \Y_h^{*}\right]\right)\\
 		% &\propto &   \prod_{k=1}^{N_l} \left|\S(f_k)\right|^{-N_b} \exp\left(- %\sum_{\nu=1}^p\u_\nu^{(k)*}\S(f_k)^{-1}\u_\nu^{(k)}\right)
-		&\propto & \prod_{h=1}^{N_c} \left|\S(\bar{f}_h)\right|^{-N_b*N_h} \exp\left(\sum_{\nu=1}^p-\u_\nu^{(h)*}\S(\bar{f}_h)^{-1}\u_\nu^{(h)}\right)
+		&\propto & \prod_{h=1}^{N_c} \left|\S(\bar{f}_h)\right|^{-N_b N_h} \exp\left(\sum_{\nu=1}^p-\u_\nu^{(h)*}\S(\bar{f}_h)^{-1}\u_\nu^{(h)}\right)
 	\end{eqnarray}
 	where we use the eigendecomposition of $\Y_{h}^{*}=\sum_{\nu=1}^{p} \lambda^{(h)}
 	_{\nu} \v^{(h)}_{\nu}\v^{(h)*}_{\nu}=\sum_{\nu=1}^{p} \u^{(h)}_{\nu}\u^{(h)*}_{\nu}$
@@ -351,16 +341,13 @@
 	$[0,1]$ for numerical stability of the B-spline basis evaluation.
 
 	MCMC chains are initialised via a two-step procedure. First, we run stochastic
-	variational inference \citep[SVI;][]{hoffman2013_SVI} with a low-rank Gaussian approximation,
+	variational inference \citep[SVI;][]{hoffman2013_SVI} with a low-rank Gaussian approximation (rank~16),
 	using the Adam optimiser~\citep{Kingma2015} at learning rate $10^{-3}$ for 2000
 	iterations, to obtain initial parameter values and a diagonal mass matrix for
 	NUTS. We then run a full NUTS warm-up phase of 2000 steps, during which the
 	mass matrix is adapted, before collecting posterior samples.
 
-	Convergence is assessed using the potential scale reduction factor ($\hat{R}< 1
-	.01$), effective sample size ($\mathrm{ESS}> 400$), E-BFMI ($> 0.3$), absence
-	of divergent transitions, and absence of maximum tree-depth saturation. All
-	results in Section~\ref{sec:application} passed these criteria.
+	Convergence is assessed using the potential scale reduction factor ($\hat{R} < 1.01$), effective sample size ($\mathrm{ESS} > 400$), E-BFMI ($> 0.3$), absence of divergent transitions, and absence of maximum tree-depth saturation. All results in Section~\ref{sec:application} passed these criteria.
 
 	\section{\label{sec:application}Application}
 
