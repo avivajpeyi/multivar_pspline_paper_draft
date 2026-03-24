@@ -8,6 +8,13 @@
 .idea/
 .vscode/
 
+node_modules/ 
+.npm/ 
+.pnpm-store/ 
+npm-debug.log*
+package.json
+package-lock.json
+
 # LaTeX
 *.aux
 *.bbl

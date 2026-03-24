@@ -310,7 +310,7 @@
 	distribution. The effect is that knots cluster where the spectrum varies most rapidly
 	and spread out in smooth regions, without requiring manual tuning.
 
-	Smoothness is enforced via the penalty matrix $\bold{P}_{j}$ with entries
+	Each component $j$ has its own penalty matrix $\bold{P}_{j}$ with entries
 	\begin{equation}
 		[\bold{P}_{j}]_{lm}= \int_{0}^{1} B_{l}''(t)\, B_{m}''(t)\, \mathrm{d}t.
 	\end{equation}
