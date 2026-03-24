@@ -7,12 +7,24 @@ import warnings
 
 import arviz as az
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FuncFormatter, LogLocator, NullFormatter
 import numpy as np
 
 EPS = 1e-12
 warnings.filterwarnings(
     "ignore", message="Attempt to set non-positive ylim on a log-scaled axis"
 )
+
+
+def _plain_log_tick(value: float, _pos: float) -> str:
+    """Format log-scale ticks as plain decimals for manuscript figures."""
+    if value <= 0 or not np.isfinite(value):
+        return ""
+    if value >= 1:
+        if np.isclose(value, round(value)):
+            return str(int(round(value)))
+        return f"{value:.1f}".rstrip("0").rstrip(".")
+    return f"{value:.2f}".rstrip("0").rstrip(".")
 
 
 def _calculate_true_var_psd_hz(
@@ -52,6 +64,9 @@ def _nearest_percentile(values: np.ndarray, percentiles: np.ndarray, q: float) -
 
 def _resolve_default_idatas(repo_root: Path) -> list[Path]:
     base = repo_root / "docs/manuscript/scripts/3D/out_var3"
+    candidates_overlay_npz = sorted(
+        base.glob("*/posterior_vi_overlay_summary.npz")
+    )
 
     candidates_cg_off_npz = sorted(
         base.glob("seed_*_*_cgOFF/posterior_ci_summary.npz")
@@ -63,6 +78,9 @@ def _resolve_default_idatas(repo_root: Path) -> list[Path]:
     candidates_any_old_npz = sorted(base.glob("seed_*_*/compact_ci_curves.npz"))
     candidates_cg_off_nc = sorted(base.glob("seed_*_*_cgOFF/inference_data.nc"))
     candidates_cg_on_nc = sorted(base.glob("seed_*_*_cgNH*/inference_data.nc"))
+
+    if candidates_overlay_npz:
+        return [candidates_overlay_npz[0]]
 
     if candidates_cg_off_npz and candidates_cg_on_npz:
         return [candidates_cg_off_npz[0], candidates_cg_on_npz[0]]
@@ -193,6 +211,65 @@ def _load_summary_from_npz(npz_path: Path) -> dict:
         if all(
             key in data
             for key in (
+                "nuts_real_q05",
+                "nuts_real_q50",
+                "nuts_real_q95",
+                "nuts_imag_q05",
+                "nuts_imag_q50",
+                "nuts_imag_q95",
+                "vi_real_q05",
+                "vi_real_q50",
+                "vi_real_q95",
+                "vi_imag_q05",
+                "vi_imag_q50",
+                "vi_imag_q95",
+            )
+        ):
+            periodogram = None
+            if "periodogram_real" in data and "periodogram_imag" in data:
+                periodogram = np.asarray(
+                    data["periodogram_real"], dtype=np.float64
+                ) + 1j * np.asarray(data["periodogram_imag"], dtype=np.float64)
+            truth = None
+            if "truth_real" in data and "truth_imag" in data:
+                truth = np.asarray(data["truth_real"], dtype=np.float64) + 1j * np.asarray(
+                    data["truth_imag"], dtype=np.float64
+                )
+
+            metrics: dict[str, float] = {}
+            metrics_path = npz_path.parent / "metrics_summary.json"
+            if metrics_path.exists():
+                with open(metrics_path, "r", encoding="utf-8") as f:
+                    loaded = json.load(f)
+                for group_name in ("nuts", "vi"):
+                    group = loaded.get(group_name, {})
+                    for k, v in group.items():
+                        if isinstance(v, (int, float)):
+                            metrics[f"{group_name}_{k}"] = float(v)
+
+            return {
+                "kind": "vi_vs_nuts_overlay",
+                "freq": freq,
+                "nuts_q05_real": np.asarray(data["nuts_real_q05"], dtype=np.float64),
+                "nuts_q50_real": np.asarray(data["nuts_real_q50"], dtype=np.float64),
+                "nuts_q95_real": np.asarray(data["nuts_real_q95"], dtype=np.float64),
+                "nuts_q05_imag": np.asarray(data["nuts_imag_q05"], dtype=np.float64),
+                "nuts_q50_imag": np.asarray(data["nuts_imag_q50"], dtype=np.float64),
+                "nuts_q95_imag": np.asarray(data["nuts_imag_q95"], dtype=np.float64),
+                "vi_q05_real": np.asarray(data["vi_real_q05"], dtype=np.float64),
+                "vi_q50_real": np.asarray(data["vi_real_q50"], dtype=np.float64),
+                "vi_q95_real": np.asarray(data["vi_real_q95"], dtype=np.float64),
+                "vi_q05_imag": np.asarray(data["vi_imag_q05"], dtype=np.float64),
+                "vi_q50_imag": np.asarray(data["vi_imag_q50"], dtype=np.float64),
+                "vi_q95_imag": np.asarray(data["vi_imag_q95"], dtype=np.float64),
+                "periodogram": periodogram,
+                "truth": truth,
+                "metrics": metrics,
+            }
+
+        if all(
+            key in data
+            for key in (
                 "psd_real_q05",
                 "psd_real_q50",
                 "psd_real_q95",
@@ -239,6 +316,7 @@ def _load_summary_from_npz(npz_path: Path) -> dict:
                 metrics[k] = float(v)
 
     return {
+        "kind": "posterior_summary",
         "freq": freq,
         "q05_real": q05_real,
         "q50_real": q50_real,
@@ -289,6 +367,7 @@ def _load_summary(idata_path: Path) -> dict:
                 pass
 
     summary = {
+        "kind": "posterior_summary",
         "freq": freq,
         "q05_real": _nearest_percentile(psd_real, percentiles, 5.0),
         "q50_real": _nearest_percentile(psd_real, percentiles, 50.0),
@@ -305,6 +384,185 @@ def _load_summary(idata_path: Path) -> dict:
         summary["periodogram"] = np.asarray(idata.observed_data["periodogram"].values)
 
     return summary
+
+
+def _plot_vi_vs_nuts_overlay(summary: dict, output_path: Path, xmax: float) -> None:
+    freq = np.asarray(summary["freq"], dtype=np.float64)
+    x_mask = (freq >= float(np.min(freq))) & (freq <= float(xmax))
+    if not np.any(x_mask):
+        x_mask = np.ones_like(freq, dtype=bool)
+
+    freq_plot = freq[x_mask]
+    truth_plot = None if summary.get("truth") is None else np.asarray(summary["truth"])[x_mask]
+    periodogram_plot = (
+        None if summary.get("periodogram") is None else np.asarray(summary["periodogram"])[x_mask]
+    )
+
+    n_channels = summary["nuts_q50_real"].shape[1]
+    fig, axes = plt.subplots(
+        n_channels,
+        n_channels,
+        figsize=(n_channels * 3.0, n_channels * 3.0),
+        sharex=True,
+        constrained_layout=False,
+    )
+    if n_channels == 1:
+        axes = np.array([[axes]])
+
+    empirical_kw = {"color": "0.75", "linewidth": 0.8, "alpha": 0.8, "zorder": 1}
+    nuts_fill_kw = {"color": "tab:blue", "alpha": 0.20, "zorder": 2}
+    nuts_line_kw = {"color": "tab:blue", "linewidth": 1.8, "zorder": 4}
+    vi_fill_kw = {"color": "tab:orange", "alpha": 0.18, "zorder": 3}
+    vi_line_kw = {
+        "color": "tab:orange",
+        "linewidth": 1.6,
+        "linestyle": "--",
+        "zorder": 5,
+    }
+    truth_kw = {"color": "black", "linewidth": 1.2, "linestyle": ":", "zorder": 6}
+
+    for i in range(n_channels):
+        for j in range(n_channels):
+            ax = axes[i, j]
+
+            if i == j:
+                nuts_low = summary["nuts_q05_real"][x_mask, i, j]
+                nuts_mid = summary["nuts_q50_real"][x_mask, i, j]
+                nuts_high = summary["nuts_q95_real"][x_mask, i, j]
+                vi_low = summary["vi_q05_real"][x_mask, i, j]
+                vi_mid = summary["vi_q50_real"][x_mask, i, j]
+                vi_high = summary["vi_q95_real"][x_mask, i, j]
+                if periodogram_plot is not None:
+                    ax.plot(
+                        freq_plot,
+                        np.maximum(np.real(periodogram_plot[:, i, j]), EPS),
+                        label="Periodogram" if (i, j) == (0, 0) else None,
+                        **empirical_kw,
+                    )
+                ax.fill_between(
+                    freq_plot,
+                    np.maximum(nuts_low, EPS),
+                    np.maximum(nuts_high, EPS),
+                    **nuts_fill_kw,
+                )
+                ax.plot(
+                    freq_plot,
+                    np.maximum(nuts_mid, EPS),
+                    label="NUTS median" if (i, j) == (0, 0) else None,
+                    **nuts_line_kw,
+                )
+                ax.fill_between(
+                    freq_plot,
+                    np.maximum(vi_low, EPS),
+                    np.maximum(vi_high, EPS),
+                    **vi_fill_kw,
+                )
+                ax.plot(
+                    freq_plot,
+                    np.maximum(vi_mid, EPS),
+                    label="VI median" if (i, j) == (0, 0) else None,
+                    **vi_line_kw,
+                )
+                if truth_plot is not None:
+                    ax.plot(
+                        freq_plot,
+                        np.maximum(np.real(truth_plot[:, i, j]), EPS),
+                        label="Truth" if (i, j) == (0, 0) else None,
+                        **truth_kw,
+                    )
+                ax.set_yscale("log")
+                ax.yaxis.set_major_locator(
+                    LogLocator(base=10.0, subs=(1.0, 2.0, 5.0))
+                )
+                ax.yaxis.set_major_formatter(FuncFormatter(_plain_log_tick))
+                ax.yaxis.set_minor_formatter(NullFormatter())
+            elif i < j:
+                nuts_low = summary["nuts_q05_real"][x_mask, i, j]
+                nuts_mid = summary["nuts_q50_real"][x_mask, i, j]
+                nuts_high = summary["nuts_q95_real"][x_mask, i, j]
+                vi_low = summary["vi_q05_real"][x_mask, i, j]
+                vi_mid = summary["vi_q50_real"][x_mask, i, j]
+                vi_high = summary["vi_q95_real"][x_mask, i, j]
+                if periodogram_plot is not None:
+                    ax.plot(freq_plot, np.real(periodogram_plot[:, i, j]), **empirical_kw)
+                ax.fill_between(freq_plot, nuts_low, nuts_high, **nuts_fill_kw)
+                ax.plot(freq_plot, nuts_mid, **nuts_line_kw)
+                ax.fill_between(freq_plot, vi_low, vi_high, **vi_fill_kw)
+                ax.plot(freq_plot, vi_mid, **vi_line_kw)
+                if truth_plot is not None:
+                    ax.plot(freq_plot, np.real(truth_plot[:, i, j]), **truth_kw)
+            else:
+                nuts_low = summary["nuts_q05_imag"][x_mask, i, j]
+                nuts_mid = summary["nuts_q50_imag"][x_mask, i, j]
+                nuts_high = summary["nuts_q95_imag"][x_mask, i, j]
+                vi_low = summary["vi_q05_imag"][x_mask, i, j]
+                vi_mid = summary["vi_q50_imag"][x_mask, i, j]
+                vi_high = summary["vi_q95_imag"][x_mask, i, j]
+                if periodogram_plot is not None:
+                    ax.plot(freq_plot, np.imag(periodogram_plot[:, i, j]), **empirical_kw)
+                ax.fill_between(freq_plot, nuts_low, nuts_high, **nuts_fill_kw)
+                ax.plot(freq_plot, nuts_mid, **nuts_line_kw)
+                ax.fill_between(freq_plot, vi_low, vi_high, **vi_fill_kw)
+                ax.plot(freq_plot, vi_mid, **vi_line_kw)
+                if truth_plot is not None:
+                    ax.plot(freq_plot, np.imag(truth_plot[:, i, j]), **truth_kw)
+
+            if i == n_channels - 1:
+                ax.set_xlabel("Frequency (Hz)")
+            ax.set_xlim(float(freq_plot[0]), min(float(xmax), float(freq_plot[-1])))
+            ax.grid(alpha=0.2, linewidth=0.5)
+
+            if i == j:
+                panel_label = f"S{i + 1}{j + 1}"
+            elif i < j:
+                panel_label = f"Re[S{i + 1}{j + 1}]"
+            else:
+                panel_label = f"Im[S{i + 1}{j + 1}]"
+            ax.text(
+                0.03,
+                0.96,
+                panel_label,
+                transform=ax.transAxes,
+                ha="left",
+                va="top",
+                fontsize=11,
+                fontweight="semibold",
+                bbox={"facecolor": "white", "edgecolor": "none", "alpha": 0.85, "pad": 1.5},
+                zorder=10,
+            )
+
+    handles, labels = axes[0, 0].get_legend_handles_labels()
+    if handles:
+        axes[0, 0].legend(
+            handles,
+            labels,
+            loc="upper right",
+            fontsize=9,
+            frameon=True,
+            framealpha=0.9,
+        )
+
+    fig.subplots_adjust(
+        left=0.08,
+        right=0.98,
+        bottom=0.07,
+        top=0.98,
+        wspace=0.18,
+        hspace=0.12,
+    )
+    fig.text(
+        0.015,
+        0.5,
+        "Spectral density [1/Hz]",
+        rotation=90,
+        va="center",
+        ha="center",
+        fontsize=12,
+    )
+    fig.savefig(output_path, dpi=220, bbox_inches="tight")
+    if output_path.suffix.lower() == ".pdf":
+        fig.savefig(output_path.with_suffix(".png"), dpi=220, bbox_inches="tight")
+    plt.close(fig)
 
 
 def main() -> int:
@@ -330,6 +588,18 @@ def main() -> int:
         s = _load_summary(p)
         s["source_path"] = str(p)
         summaries.append(s)
+
+    if len(summaries) == 1 and summaries[0].get("kind") == "vi_vs_nuts_overlay":
+        _plot_vi_vs_nuts_overlay(
+            summaries[0],
+            output_path=output_path,
+            xmax=float(args.xmax),
+        )
+        print("Loaded input file:")
+        print(f"  - {idata_paths[0]}")
+        print("")
+        print(f"Saved VI vs NUTS overlay to {output_path}")
+        return 0
 
     if args.labels is None:
         if len(idata_paths) == 2:

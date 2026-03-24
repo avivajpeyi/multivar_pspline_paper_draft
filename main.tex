@@ -27,6 +27,9 @@
 \usepackage{hyperref}% add hypertext capabilities
 \usepackage{xcolor}
 \usepackage{verbatim}
+\usepackage{nicematrix}
+\usepackage{booktabs}
+\usepackage{siunitx}
 
 
 \input{custom_commands}
@@ -421,13 +424,42 @@ For complex off-diagonal entries, the coverage check is performed on the real-va
 matrix representation used in diagnostics (upper triangle uses real parts, lower
 triangle uses imaginary parts).
 
-Across 100 runs, we obtain $\text{RIAE} = 0.0561 \pm 0.0073$, $\text{Coverage} = 0.4744 \pm 0.0358.$.
-The corresponding mean 90\% interval widths are
-$0.0659\pm0.0015$ for PSD diagonal entries,
-$0.0527\pm0.0015$ for PSD off-diagonal entries, and
-$0.0386\pm0.0010$ for off-diagonal coherence.
-\avi{I think im confused... why the coherence coverage different from the off-diagnonal coverage?...}
+Table~\ref{tab:3d_var2_results} summarises the simulation results across 100 independent realisations for two configurations: a short run ($n=2{,}048$, no coarse-graining) and a large run ($n=16{,}384$, with coarse-graining $N_h=4$).
+Both configurations achieve near-nominal 90\% credible interval coverage (${\approx}0.87$), while RIAE decreases from $0.157$ to $0.109$ as the sample size grows eightfold.
+The large-run results confirm that coarse-graining does not degrade estimation quality.
+MCMC convergence was satisfactory across all realisations: $\hat{R} \leq 1.01$ for all parameters, zero divergent transitions, and E-BFMI $> 0.6$.
 
+Figure~\ref{fig:vi_vs_nuts_var3} shows the full $3\times3$ spectral matrix for a representative $n=16{,}384$ realisation ($\mathrm{RIAE}=0.114$, coverage $84\%$), with NUTS and VI posteriors overlaid.
+Both samplers recover the diagonal PSDs and off-diagonal cross-spectra, and their medians are nearly indistinguishable, supporting the use of VI as a fast alternative to NUTS.
+
+\begin{table}[htbp]
+  \centering
+  \caption{3D VAR(2) simulation results (100 realisations, mean $\pm$ std).
+    Coverage is the fraction of (frequency, matrix element) pairs where the true
+    spectral value falls within the pointwise 90\% credible interval.
+    RIAE is the relative integrated absolute error (Frobenius norm).
+    ESS is the median effective sample size across parameters.}
+  \label{tab:3d_var2_results}
+  \begin{NiceTabular}{SSSSSS}
+    \toprule
+    {$n$} & {$N_b$} & {$N_h$} & {$N_c$} & {Coverage} & {RIAE} & {ESS (median)} \\
+    \midrule
+    2048  & 4 & 1    & 1024 & 0.873 \pm 0.041 & 0.157 \pm 0.016 & 11242 \pm 3739 \\
+    16384 & 4 & 4    & 2048 & 0.872 \pm 0.042 & 0.109 \pm 0.004 & 17603 \pm 2214 \\
+    \bottomrule
+  \end{NiceTabular}
+\end{table}
+
+\begin{figure}
+  \centering
+  \includegraphics[width=1\linewidth]{figures/vi_vs_nuts_var3.png}
+  \caption{Representative $3\times3$ spectral density matrix estimate for a single $n=16{,}384$ VAR(2) realisation
+    ($\mathrm{RIAE}=0.114$, 90\% CI coverage $84\%$).
+    Each panel shows the raw periodogram (grey), the theoretical spectrum (dotted black), and posterior medians with 90\% credible bands for NUTS (blue) and VI (orange).
+    Diagonal panels ($S_{11}$, $S_{22}$, $S_{33}$) show the power spectral densities; off-diagonal panels show real and imaginary parts of the cross-spectra.
+    NUTS and VI medians are nearly identical across all elements, while both track the true spectrum closely.}
+  \label{fig:vi_vs_nuts_var3}
+\end{figure}
 
 \begin{figure}
   \centering

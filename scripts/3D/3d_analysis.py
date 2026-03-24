@@ -1,107 +1,114 @@
-"""Multivariate PSD simulation study with in-script VAR data generation.
+"""Fixed 3D VAR(2) analysis for manuscript figures.
 
-CLI args:
-1) seed (default 0)
-2) mode: "large" or "short"
+This script runs a single multivariate PSD analysis with:
+- large N
+- Nb = 4
+- coarse-graining Nh = 4
 
-Examples
---------
-python 3d_study.py 0 large --coarse-grain both
-python 3d_study.py 0 large --coarse-grain on --coarse-nh 4
-python 3d_study.py 0 short --coarse-grain off
-python 3d_study.py 0 large --coarse-grain both --run-design-psd --design-coarse off
+It saves:
+- compact posterior summaries for NUTS and VI,
+- a metrics JSON,
+- a PSD overlay figure comparing VI and NUTS.
 """
 
-import argparse
-import csv
+from __future__ import annotations
+
 import json
 import os
-from typing import Literal
+from pathlib import Path
 
 os.environ["XLA_FLAGS"] = "--xla_force_host_platform_device_count=4"
 
 import jax
+import matplotlib.pyplot as plt
+from matplotlib.ticker import FuncFormatter, LogLocator, NullFormatter
 import numpy as np
 
 from log_psplines.logger import logger, set_level
 from log_psplines.mcmc import MultivariateTimeseries, run_mcmc
 
 jax.config.update("jax_enable_x64", True)
+set_level("INFO")
 
-set_level("DEBUG")
+HERE = Path(__file__).resolve().parent
+OUTDIR = HERE / "out_var3" / "large_N16384_Nb4_cg4"
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-OUT = os.path.join("out_var3")
+SEED = 0
+FS = 1.0
+N = 16 * 1024
+NB = 4
+COARSE_NH = 4
+STAGE1_VI_NH = 8
+K = 50
+BURN_IN = 512
 
-DEFAULT_KNOT_METHOD = "density"
-DEFAULT_TARGET_ACCEPT_PROB = 0.95
-DEFAULT_MAX_TREE_DEPTH = 14
-DEFAULT_INIT_FROM_VI = True
-DEFAULT_VI_STEPS = 100_000
-DEFAULT_VI_GUIDE = "lowrank:16"
+TARGET_ACCEPT_PROB = 0.95
+MAX_TREE_DEPTH = 14
+INIT_FROM_VI = True
+VI_STEPS = 300_000
+VI_GUIDE = "lowrank:16"
 VI_LR = 5e-4
-DEFAULT_VI_PSD_MAX_DRAWS = 256
-DEFAULT_POSTERIOR_PSD_MAX_DRAWS = 256
-DEFAULT_ALPHA_DELTA = 1.0
-DEFAULT_BETA_DELTA = 1.0
-# Total Niter=8000 implemented as 4000 warmup + 4000 posterior samples.
-DEFAULT_N_SAMPLES = 4000
-DEFAULT_N_WARMUP = 4000
-DEFAULT_NUM_CHAINS = 4
+VI_PSD_MAX_DRAWS = 256
+N_SAMPLES = 4000
+N_WARMUP = 4000
+NUM_CHAINS = 4
+ALPHA_DELTA = 1.0
+BETA_DELTA = 1.0
+KNOT_METHOD = "density"
 
-DEFAULT_FS = 1.0  # Hz
-DEFAULT_BURN_IN = 512
+XMAX = 0.5
 EPS = 1e-12
 
-# VAR(2) setup (3 channels) embedded directly in this script.
 A1 = np.diag([0.4, 0.3, 0.2])
 A2 = np.array(
     [
-        [-0.2, 0.5, 0.0],  # var2 -> var1 at lag 2
-        [0.4, -0.1, 0.0],  # var1 -> var2 at lag 2
+        [-0.2, 0.5, 0.0],
+        [0.4, -0.1, 0.0],
         [0.0, 0.0, -0.1],
     ],
     dtype=np.float64,
 )
 VAR_COEFFS = np.array([A1, A2], dtype=np.float64)
 
-SIGMA_VAL = 0.25
-OFF_DIAG = 0.08
 SIGMA = np.array(
     [
-        [SIGMA_VAL, 0.0, OFF_DIAG],
-        [0.0, SIGMA_VAL, OFF_DIAG],
-        [OFF_DIAG, OFF_DIAG, SIGMA_VAL],
+        [0.25, 0.0, 0.08],
+        [0.0, 0.25, 0.08],
+        [0.08, 0.08, 0.25],
     ],
     dtype=np.float64,
 )
 
-MODE_CONFIG = {
-    # short: N=2048, Nb=2
-    "short": {"N": 2048, "Nb": 2, "default_coarse_Nh": None},
-    # large: N=16384, Nb=4 with Nh=4
-    "large": {"N": 16 * 1024, "Nb": 4, "default_coarse_Nh": 4},
-}
+
+def _plain_log_tick(value: float, _pos: float) -> str:
+    """Format log-scale ticks as plain decimals for manuscript figures."""
+    if value <= 0 or not np.isfinite(value):
+        return ""
+    if value >= 1:
+        if np.isclose(value, round(value)):
+            return str(int(round(value)))
+        return f"{value:.1f}".rstrip("0").rstrip(".")
+    return f"{value:.2f}".rstrip("0").rstrip(".")
 
 
 def _log_var_coefficients() -> None:
-    """Log the VAR(p) coefficient matrices used by this study."""
     logger.info("Using VAR coefficients:")
     for lag, coeff in enumerate(VAR_COEFFS, start=1):
-        coeff_str = np.array2string(coeff, precision=4, suppress_small=False)
-        logger.info(f"A{lag} =\n{coeff_str}")
+        logger.info(f"A{lag} =\n{np.array2string(coeff, precision=4)}")
 
 
 def _companion_spectral_radius(var_coeffs: np.ndarray) -> float:
     """Return companion-matrix spectral radius for VAR(p) coefficients."""
     ar_order, n_channels, _ = var_coeffs.shape
     companion = np.zeros(
-        (n_channels * ar_order, n_channels * ar_order), dtype=np.float64
+        (n_channels * ar_order, n_channels * ar_order),
+        dtype=np.float64,
     )
     companion[:n_channels, : (n_channels * ar_order)] = np.hstack(var_coeffs)
     if ar_order > 1:
         companion[n_channels:, :-n_channels] = np.eye(
-            n_channels * (ar_order - 1), dtype=np.float64
+            n_channels * (ar_order - 1),
+            dtype=np.float64,
         )
     eigvals = np.linalg.eigvals(companion)
     return float(np.max(np.abs(eigvals))) if eigvals.size else 0.0
@@ -113,8 +120,8 @@ def _simulate_var_process(
     sigma: np.ndarray,
     seed: int,
     *,
-    fs: float = DEFAULT_FS,
-    burn_in: int = DEFAULT_BURN_IN,
+    fs: float,
+    burn_in: int,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Simulate VAR(p): x_t = sum_k A_k x_{t-k} + eps_t."""
     ar_order, n_channels, _ = var_coeffs.shape
@@ -139,21 +146,15 @@ def _calculate_true_var_psd_hz(
     var_coeffs: np.ndarray,
     sigma: np.ndarray,
     *,
-    fs: float = DEFAULT_FS,
+    fs: float,
 ) -> np.ndarray:
     """Compute one-sided theoretical PSD matrix S(f) on a Hz frequency grid."""
     freqs_hz = np.asarray(freqs_hz, dtype=np.float64)
-    if freqs_hz.ndim != 1:
-        raise ValueError("freqs_hz must be one-dimensional.")
-    if freqs_hz.size and (
-        np.min(freqs_hz) < 0.0 or np.max(freqs_hz) > (fs / 2.0 + 1e-12)
-    ):
-        raise ValueError("freqs_hz must lie in [0, fs/2].")
-
     ar_order, n_channels, _ = var_coeffs.shape
     omega = 2.0 * np.pi * freqs_hz / float(fs)
     psd = np.empty(
-        (freqs_hz.shape[0], n_channels, n_channels), dtype=np.complex128
+        (freqs_hz.shape[0], n_channels, n_channels),
+        dtype=np.complex128,
     )
     ident = np.eye(n_channels, dtype=np.complex128)
 
@@ -162,46 +163,129 @@ def _calculate_true_var_psd_hz(
         for lag in range(1, ar_order + 1):
             a_f = a_f - var_coeffs[lag - 1] * np.exp(-1j * w * lag)
         h_f = np.linalg.inv(a_f)
-        s_f = h_f @ sigma @ h_f.conj().T
-        psd[idx] = (2.0 / float(fs)) * s_f
+        psd[idx] = (2.0 / float(fs)) * (h_f @ sigma @ h_f.conj().T)
 
     if freqs_hz.size and np.isclose(freqs_hz[-1], fs / 2.0):
         psd[-1] = 0.5 * psd[-1]
 
     psd = 0.5 * (psd + np.swapaxes(psd.conj(), -1, -2))
-    psd = np.where(np.abs(psd) < EPS, EPS, psd)
-    return psd
+    return np.where(np.abs(psd) < EPS, EPS, psd)
 
 
 def _extract_percentile_slice(
-    values: np.ndarray, percentiles: np.ndarray, target: float
+    values: np.ndarray,
+    percentiles: np.ndarray,
+    target: float,
 ) -> np.ndarray:
-    """Return percentile slice nearest to target."""
-    if values.shape[0] == 0:
-        raise ValueError("values must contain percentile axis.")
     idx = int(np.argmin(np.abs(percentiles - target)))
     return np.asarray(values[idx], dtype=np.float64)
 
 
-def _compute_ci_width_metrics(idata) -> dict[str, float]:
-    """Compute CI-width summaries from posterior PSD/coherence quantiles."""
-    metrics: dict[str, float] = {}
-    psd_group = getattr(idata, "posterior_psd", None)
-    if psd_group is None or "psd_matrix_real" not in psd_group:
-        return metrics
+def _extract_group_quantiles(psd_group) -> dict[str, np.ndarray]:
+    """Return freq and 5/50/95 quantiles from posterior_psd-like groups."""
+    if psd_group is None:
+        raise ValueError("PSD group is missing.")
+    if "psd_matrix_real" not in psd_group or "psd_matrix_imag" not in psd_group:
+        raise ValueError(
+            "PSD group must contain psd_matrix_real and psd_matrix_imag."
+        )
 
-    psd_real = np.asarray(psd_group["psd_matrix_real"].values, dtype=np.float64)
+    freq = np.asarray(psd_group.coords["freq"].values, dtype=np.float64)
+    real = np.asarray(psd_group["psd_matrix_real"].values, dtype=np.float64)
+    imag = np.asarray(psd_group["psd_matrix_imag"].values, dtype=np.float64)
+    percentiles = np.asarray(
+        psd_group["psd_matrix_real"].coords["percentile"].values,
+        dtype=np.float64,
+    )
+
+    return {
+        "freq": freq,
+        "q05_real": _extract_percentile_slice(real, percentiles, 5.0),
+        "q50_real": _extract_percentile_slice(real, percentiles, 50.0),
+        "q95_real": _extract_percentile_slice(real, percentiles, 95.0),
+        "q05_imag": _extract_percentile_slice(imag, percentiles, 5.0),
+        "q50_imag": _extract_percentile_slice(imag, percentiles, 50.0),
+        "q95_imag": _extract_percentile_slice(imag, percentiles, 95.0),
+    }
+
+
+def _interp_complex_matrix(
+    target_freq: np.ndarray,
+    source_freq: np.ndarray,
+    source_values: np.ndarray,
+) -> np.ndarray:
+    """Interpolate complex (F, P, P) arrays onto a target frequency grid."""
+    target_freq = np.asarray(target_freq, dtype=np.float64)
+    source_freq = np.asarray(source_freq, dtype=np.float64)
+    source_values = np.asarray(source_values, dtype=np.complex128)
+
+    if source_values.shape[0] != source_freq.size:
+        raise ValueError("source_values first dimension must match source_freq.")
+
+    _, n_channels, _ = source_values.shape
+    out = np.empty((target_freq.size, n_channels, n_channels), dtype=np.complex128)
+    for i in range(n_channels):
+        for j in range(n_channels):
+            out[:, i, j] = np.interp(
+                target_freq,
+                source_freq,
+                np.real(source_values[:, i, j]),
+            ) + 1j * np.interp(
+                target_freq,
+                source_freq,
+                np.imag(source_values[:, i, j]),
+            )
+    return out
+
+
+def _maybe_interp_summary(
+    summary: dict[str, np.ndarray],
+    target_freq: np.ndarray,
+) -> dict[str, np.ndarray]:
+    """Interpolate summary quantiles onto target_freq when needed."""
+    source_freq = np.asarray(summary["freq"], dtype=np.float64)
+    target_freq = np.asarray(target_freq, dtype=np.float64)
+    if np.array_equal(source_freq, target_freq):
+        return summary
+
+    def _interp_real(array: np.ndarray) -> np.ndarray:
+        return np.real(
+            _interp_complex_matrix(
+                target_freq,
+                source_freq,
+                array.astype(np.complex128),
+            )
+        )
+
+    return {
+        "freq": target_freq,
+        "q05_real": _interp_real(summary["q05_real"]),
+        "q50_real": _interp_real(summary["q50_real"]),
+        "q95_real": _interp_real(summary["q95_real"]),
+        "q05_imag": _interp_real(summary["q05_imag"]),
+        "q50_imag": _interp_real(summary["q50_imag"]),
+        "q95_imag": _interp_real(summary["q95_imag"]),
+    }
+
+
+def _compute_ci_width_metrics_from_group(psd_group) -> dict[str, float]:
+    """Compute CI-width summaries from a posterior_psd-like group."""
+    if psd_group is None or "psd_matrix_real" not in psd_group:
+        return {}
+
+    real = np.asarray(psd_group["psd_matrix_real"].values, dtype=np.float64)
     percentiles = np.asarray(
         psd_group["psd_matrix_real"].coords.get(
-            "percentile", np.arange(psd_real.shape[0], dtype=float)
+            "percentile",
+            np.arange(real.shape[0], dtype=float),
         ),
         dtype=np.float64,
     )
-    if psd_real.shape[0] < 2:
-        return metrics
+    if real.shape[0] < 2:
+        return {}
 
-    q05 = _extract_percentile_slice(psd_real, percentiles, 5.0)
-    q95 = _extract_percentile_slice(psd_real, percentiles, 95.0)
+    q05 = _extract_percentile_slice(real, percentiles, 5.0)
+    q95 = _extract_percentile_slice(real, percentiles, 95.0)
     width_psd = np.maximum(q95 - q05, 0.0)
 
     p = width_psd.shape[1]
@@ -210,18 +294,21 @@ def _compute_ci_width_metrics(idata) -> dict[str, float]:
     diag_width = width_psd[:, diag_idx, diag_idx]
     offdiag_width = width_psd[:, offdiag_mask]
 
-    metrics["ciw_psd_diag_mean"] = float(np.mean(diag_width))
-    metrics["ciw_psd_diag_median"] = float(np.median(diag_width))
-    metrics["ciw_psd_diag_max"] = float(np.max(diag_width))
-    metrics["ciw_psd_offdiag_mean"] = float(np.mean(offdiag_width))
-    metrics["ciw_psd_offdiag_median"] = float(np.median(offdiag_width))
-    metrics["ciw_psd_offdiag_max"] = float(np.max(offdiag_width))
+    metrics = {
+        "ciw_psd_diag_mean": float(np.mean(diag_width)),
+        "ciw_psd_diag_median": float(np.median(diag_width)),
+        "ciw_psd_diag_max": float(np.max(diag_width)),
+        "ciw_psd_offdiag_mean": float(np.mean(offdiag_width)),
+        "ciw_psd_offdiag_median": float(np.median(offdiag_width)),
+        "ciw_psd_offdiag_max": float(np.max(offdiag_width)),
+    }
 
     if "coherence" in psd_group:
         coherence = np.asarray(psd_group["coherence"].values, dtype=np.float64)
         coh_percentiles = np.asarray(
             psd_group["coherence"].coords.get(
-                "percentile", np.arange(coherence.shape[0], dtype=float)
+                "percentile",
+                np.arange(coherence.shape[0], dtype=float),
             ),
             dtype=np.float64,
         )
@@ -237,366 +324,365 @@ def _compute_ci_width_metrics(idata) -> dict[str, float]:
     return metrics
 
 
-def _extract_psd_quantiles(
-    idata,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """Extract freq grid and 5/50/95 posterior quantiles for PSD real/imag parts."""
-    psd_group = getattr(idata, "posterior_psd", None)
-    if psd_group is None:
-        raise ValueError("InferenceData has no posterior_psd group.")
-    if "psd_matrix_real" not in psd_group or "psd_matrix_imag" not in psd_group:
-        raise ValueError("posterior_psd must include psd_matrix_real and psd_matrix_imag.")
-
-    freq = np.asarray(psd_group.coords["freq"].values, dtype=np.float64)
-    psd_real = np.asarray(psd_group["psd_matrix_real"].values, dtype=np.float64)
-    psd_imag = np.asarray(psd_group["psd_matrix_imag"].values, dtype=np.float64)
-    percentiles = np.asarray(
-        psd_group["psd_matrix_real"].coords.get(
-            "percentile", np.arange(psd_real.shape[0], dtype=float)
-        ),
-        dtype=np.float64,
-    )
-
-    q05_real = _extract_percentile_slice(psd_real, percentiles, 5.0)
-    q50_real = _extract_percentile_slice(psd_real, percentiles, 50.0)
-    q95_real = _extract_percentile_slice(psd_real, percentiles, 95.0)
-    q05_imag = _extract_percentile_slice(psd_imag, percentiles, 5.0)
-    q50_imag = _extract_percentile_slice(psd_imag, percentiles, 50.0)
-    q95_imag = _extract_percentile_slice(psd_imag, percentiles, 95.0)
-
-    return (
-        freq,
-        q05_real,
-        q50_real,
-        q95_real,
-        q05_imag,
-        q50_imag,
-        q95_imag,
-    )
+def _scalar_attr(attrs: dict, *keys: str) -> float | None:
+    for key in keys:
+        if key not in attrs:
+            continue
+        try:
+            value = float(attrs[key])
+        except Exception:
+            continue
+        if np.isfinite(value):
+            return value
+    return None
 
 
-def _interp_truth_to_freq(
-    target_freq: np.ndarray,
-    true_freq: np.ndarray,
-    true_psd: np.ndarray,
-) -> np.ndarray:
-    """Interpolate complex true PSD matrix onto target frequency grid."""
-    target_freq = np.asarray(target_freq, dtype=np.float64)
-    true_freq = np.asarray(true_freq, dtype=np.float64)
-    true_psd = np.asarray(true_psd, dtype=np.complex128)
-
-    if target_freq.ndim != 1 or true_freq.ndim != 1:
-        raise ValueError("Frequency arrays must be one-dimensional.")
-    if true_psd.shape[0] != true_freq.size:
-        raise ValueError("true_psd first dimension must match true_freq length.")
-
-    f_count, n_channels, _ = true_psd.shape
-    if f_count == 0:
-        raise ValueError("true_psd is empty.")
-
-    out = np.empty((target_freq.size, n_channels, n_channels), dtype=np.complex128)
-    for i in range(n_channels):
-        for j in range(n_channels):
-            re = np.real(true_psd[:, i, j])
-            im = np.imag(true_psd[:, i, j])
-            out[:, i, j] = np.interp(target_freq, true_freq, re) + 1j * np.interp(
-                target_freq, true_freq, im
-            )
-    return out
-
-
-def _save_compact_posterior_summary(
-    outdir: str,
-    idata,
-    *,
-    freq_true_hz: np.ndarray,
-    true_psd: np.ndarray,
-) -> None:
-    """Save compact posterior CIs + truth + periodogram for downstream plotting."""
-    (
-        freq,
-        q05_real,
-        q50_real,
-        q95_real,
-        q05_imag,
-        q50_imag,
-        q95_imag,
-    ) = _extract_psd_quantiles(idata)
-
-    payload: dict[str, np.ndarray] = {
-        "freq": freq,
-        "psd_real_q05": q05_real,
-        "psd_real_q50": q50_real,
-        "psd_real_q95": q95_real,
-        "psd_imag_q05": q05_imag,
-        "psd_imag_q50": q50_imag,
-        "psd_imag_q95": q95_imag,
+def _build_metrics_summary(idata) -> dict[str, object]:
+    attrs = dict(getattr(idata, "attrs", {}) or {})
+    summary: dict[str, object] = {
+        "config": {
+            "seed": SEED,
+            "N": N,
+            "Nb": NB,
+            "coarse_Nh": COARSE_NH,
+            "stage1_vi_Nh": STAGE1_VI_NH,
+            "K": K,
+            "n_samples": N_SAMPLES,
+            "n_warmup": N_WARMUP,
+            "num_chains": NUM_CHAINS,
+            "vi_steps": VI_STEPS,
+            "vi_guide": VI_GUIDE,
+        }
     }
 
-    true_interp = _interp_truth_to_freq(freq, freq_true_hz, true_psd)
-    payload["truth_real"] = np.real(true_interp)
-    payload["truth_imag"] = np.imag(true_interp)
+    posterior_group = getattr(idata, "posterior_psd", None)
+    vi_group = getattr(idata, "vi_posterior_psd", None)
 
-    if hasattr(idata, "observed_data") and "periodogram" in idata.observed_data:
-        periodogram = np.asarray(idata.observed_data["periodogram"].values)
+    summary["nuts"] = {
+        "lnz": _scalar_attr(attrs, "lnz"),
+        "lnz_err": _scalar_attr(attrs, "lnz_err"),
+        "riae": _scalar_attr(attrs, "riae_matrix", "riae"),
+        "coverage": _scalar_attr(attrs, "coverage"),
+        "runtime": _scalar_attr(attrs, "runtime"),
+        "coarse_vi_attempted": _scalar_attr(attrs, "coarse_vi_attempted"),
+        "coarse_vi_success": _scalar_attr(attrs, "coarse_vi_success"),
+        "coarse_vi_nfreq": _scalar_attr(attrs, "coarse_vi_nfreq"),
+        "coarse_vi_full_nfreq": _scalar_attr(attrs, "coarse_vi_full_nfreq"),
+        "coarse_vi_target_nfreq": _scalar_attr(attrs, "coarse_vi_target_nfreq"),
+        **_compute_ci_width_metrics_from_group(posterior_group),
+    }
+    summary["vi"] = {
+        "riae": _scalar_attr(attrs, "vi_riae_vs_truth", "vi_riae"),
+        "coverage": _scalar_attr(attrs, "vi_coverage_vs_truth", "vi_coverage"),
+        "ci_width": _scalar_attr(
+            attrs,
+            "vi_ci_width_vs_truth",
+            "vi_ci_width",
+            "vi_ci_width_diag_mean",
+        ),
+        **_compute_ci_width_metrics_from_group(vi_group),
+    }
+    return summary
+
+
+def _save_compact_summary(
+    outdir: Path,
+    *,
+    nuts_summary: dict[str, np.ndarray],
+    vi_summary: dict[str, np.ndarray],
+    periodogram: np.ndarray | None,
+    truth: np.ndarray,
+) -> None:
+    payload: dict[str, np.ndarray] = {
+        "freq": nuts_summary["freq"],
+        "nuts_real_q05": nuts_summary["q05_real"],
+        "nuts_real_q50": nuts_summary["q50_real"],
+        "nuts_real_q95": nuts_summary["q95_real"],
+        "nuts_imag_q05": nuts_summary["q05_imag"],
+        "nuts_imag_q50": nuts_summary["q50_imag"],
+        "nuts_imag_q95": nuts_summary["q95_imag"],
+        "vi_real_q05": vi_summary["q05_real"],
+        "vi_real_q50": vi_summary["q50_real"],
+        "vi_real_q95": vi_summary["q95_real"],
+        "vi_imag_q05": vi_summary["q05_imag"],
+        "vi_imag_q50": vi_summary["q50_imag"],
+        "vi_imag_q95": vi_summary["q95_imag"],
+        "truth_real": np.real(truth),
+        "truth_imag": np.imag(truth),
+    }
+    if periodogram is not None:
         payload["periodogram_real"] = np.real(periodogram)
         payload["periodogram_imag"] = np.imag(periodogram)
 
-    out_npz = os.path.join(outdir, "posterior_ci_summary.npz")
-    np.savez_compressed(out_npz, **payload)
-    logger.info(f"Saved compact posterior CI summary to {out_npz}")
+    out_path = outdir / "posterior_vi_overlay_summary.npz"
+    np.savez_compressed(out_path, **payload)
+    logger.info(f"Saved summary arrays to {out_path}")
 
 
-def _extract_run_metrics(
-    idata,
+def _plot_vi_vs_nuts_overlay(
+    outdir: Path,
     *,
-    seed: int,
-    mode: str,
-    N: int,
-    Nb: int,
-    coarse_Nh: int | None,
-    design_tau: float | None,
-    design_psd_enabled: bool,
-) -> dict[str, float | int | str]:
-    """Extract compact run-level metrics for downstream aggregation."""
-    attrs = idata.attrs
-    ess_raw = attrs.get("ess", np.nan)
-    ess_arr = np.asarray(ess_raw, dtype=float)
-    ess_median = float(np.nanmedian(ess_arr)) if ess_arr.size else float("nan")
+    nuts_summary: dict[str, np.ndarray],
+    vi_summary: dict[str, np.ndarray],
+    truth: np.ndarray,
+    periodogram: np.ndarray | None,
+) -> None:
+    freq = nuts_summary["freq"]
+    x_mask = (freq >= float(np.min(freq))) & (freq <= XMAX)
+    if not np.any(x_mask):
+        x_mask = np.ones_like(freq, dtype=bool)
 
-    metrics: dict[str, float | int | str] = {
-        "seed": int(seed),
-        "mode": str(mode),
-        "N": int(N),
-        "Nb": int(Nb),
-        "Nh": "OFF" if coarse_Nh is None else int(coarse_Nh),
-        "coarse_grain_enabled": coarse_Nh is not None,
-        "design_psd_enabled": bool(design_psd_enabled),
-        "design_tau": float(design_tau) if design_tau is not None else np.nan,
-        "lnz": float(attrs.get("lnz", np.nan)),
-        "lnz_err": float(attrs.get("lnz_err", np.nan)),
-        "riae_matrix": float(attrs.get("riae_matrix", attrs.get("riae", np.nan))),
-        "coverage": float(attrs.get("coverage", np.nan)),
-        "runtime": float(attrs.get("runtime", np.nan)),
-        "ess_median": ess_median,
+    freq_plot = freq[x_mask]
+    truth_plot = truth[x_mask]
+    periodogram_plot = None if periodogram is None else periodogram[x_mask]
+
+    n_channels = nuts_summary["q50_real"].shape[1]
+    fig, axes = plt.subplots(
+        n_channels,
+        n_channels,
+        figsize=(n_channels * 3.0, n_channels * 3.0),
+        sharex=True,
+        constrained_layout=False,
+    )
+    if n_channels == 1:
+        axes = np.array([[axes]])
+
+    empirical_kw = {
+        "color": "0.75",
+        "linewidth": 0.8,
+        "alpha": 0.8,
+        "zorder": 1,
     }
-    metrics.update(_compute_ci_width_metrics(idata))
-    return metrics
+    nuts_fill_kw = {
+        "color": "tab:blue",
+        "alpha": 0.20,
+        "zorder": 2,
+    }
+    nuts_line_kw = {
+        "color": "tab:blue",
+        "linewidth": 1.8,
+        "zorder": 4,
+    }
+    vi_fill_kw = {
+        "color": "tab:orange",
+        "alpha": 0.18,
+        "zorder": 3,
+    }
+    vi_line_kw = {
+        "color": "tab:orange",
+        "linewidth": 1.6,
+        "linestyle": "--",
+        "zorder": 5,
+    }
+    truth_kw = {
+        "color": "black",
+        "linewidth": 1.2,
+        "linestyle": ":",
+        "zorder": 6,
+    }
 
+    for i in range(n_channels):
+        for j in range(n_channels):
+            ax = axes[i, j]
+            nuts_mid_re = nuts_summary["q50_real"][x_mask, i, j]
+            nuts_low_re = nuts_summary["q05_real"][x_mask, i, j]
+            nuts_high_re = nuts_summary["q95_real"][x_mask, i, j]
+            vi_mid_re = vi_summary["q50_real"][x_mask, i, j]
+            vi_low_re = vi_summary["q05_real"][x_mask, i, j]
+            vi_high_re = vi_summary["q95_real"][x_mask, i, j]
 
-def _save_metrics_summary(
-    outdir: str, metrics: dict[str, float | int | str]
-) -> None:
-    """Persist compact metrics as JSON and single-row CSV."""
-    metrics_json = os.path.join(outdir, "metrics_summary.json")
-    metrics_csv = os.path.join(outdir, "metrics_summary.csv")
+            nuts_mid_im = nuts_summary["q50_imag"][x_mask, i, j]
+            nuts_low_im = nuts_summary["q05_imag"][x_mask, i, j]
+            nuts_high_im = nuts_summary["q95_imag"][x_mask, i, j]
+            vi_mid_im = vi_summary["q50_imag"][x_mask, i, j]
+            vi_low_im = vi_summary["q05_imag"][x_mask, i, j]
+            vi_high_im = vi_summary["q95_imag"][x_mask, i, j]
 
-    with open(metrics_json, "w", encoding="utf-8") as f:
-        json.dump(metrics, f, indent=2, sort_keys=True)
+            if i == j:
+                if periodogram_plot is not None:
+                    ax.plot(
+                        freq_plot,
+                        np.maximum(np.real(periodogram_plot[:, i, j]), EPS),
+                        label="Periodogram" if (i, j) == (0, 0) else None,
+                        **empirical_kw,
+                    )
+                ax.fill_between(
+                    freq_plot,
+                    np.maximum(nuts_low_re, EPS),
+                    np.maximum(nuts_high_re, EPS),
+                    **nuts_fill_kw,
+                )
+                ax.plot(
+                    freq_plot,
+                    np.maximum(nuts_mid_re, EPS),
+                    label="NUTS median" if (i, j) == (0, 0) else None,
+                    **nuts_line_kw,
+                )
+                ax.fill_between(
+                    freq_plot,
+                    np.maximum(vi_low_re, EPS),
+                    np.maximum(vi_high_re, EPS),
+                    **vi_fill_kw,
+                )
+                ax.plot(
+                    freq_plot,
+                    np.maximum(vi_mid_re, EPS),
+                    label="VI median" if (i, j) == (0, 0) else None,
+                    **vi_line_kw,
+                )
+                ax.plot(
+                    freq_plot,
+                    np.maximum(np.real(truth_plot[:, i, j]), EPS),
+                    label="Truth" if (i, j) == (0, 0) else None,
+                    **truth_kw,
+                )
+                ax.set_yscale("log")
+                ax.yaxis.set_major_locator(
+                    LogLocator(base=10.0, subs=(1.0, 2.0, 5.0))
+                )
+                ax.yaxis.set_major_formatter(FuncFormatter(_plain_log_tick))
+                ax.yaxis.set_minor_formatter(NullFormatter())
+            elif i < j:
+                if periodogram_plot is not None:
+                    ax.plot(
+                        freq_plot,
+                        np.real(periodogram_plot[:, i, j]),
+                        **empirical_kw,
+                    )
+                ax.fill_between(
+                    freq_plot,
+                    nuts_low_re,
+                    nuts_high_re,
+                    **nuts_fill_kw,
+                )
+                ax.plot(
+                    freq_plot,
+                    nuts_mid_re,
+                    **nuts_line_kw,
+                )
+                ax.fill_between(
+                    freq_plot,
+                    vi_low_re,
+                    vi_high_re,
+                    **vi_fill_kw,
+                )
+                ax.plot(
+                    freq_plot,
+                    vi_mid_re,
+                    **vi_line_kw,
+                )
+                ax.plot(
+                    freq_plot,
+                    np.real(truth_plot[:, i, j]),
+                    **truth_kw,
+                )
+            else:
+                if periodogram_plot is not None:
+                    ax.plot(
+                        freq_plot,
+                        np.imag(periodogram_plot[:, i, j]),
+                        **empirical_kw,
+                    )
+                ax.fill_between(
+                    freq_plot,
+                    nuts_low_im,
+                    nuts_high_im,
+                    **nuts_fill_kw,
+                )
+                ax.plot(
+                    freq_plot,
+                    nuts_mid_im,
+                    **nuts_line_kw,
+                )
+                ax.fill_between(
+                    freq_plot,
+                    vi_low_im,
+                    vi_high_im,
+                    **vi_fill_kw,
+                )
+                ax.plot(
+                    freq_plot,
+                    vi_mid_im,
+                    **vi_line_kw,
+                )
+                ax.plot(
+                    freq_plot,
+                    np.imag(truth_plot[:, i, j]),
+                    **truth_kw,
+                )
 
-    with open(metrics_csv, "w", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=list(metrics.keys()))
-        writer.writeheader()
-        writer.writerow(metrics)
-
-    logger.info(f"Saved compact metrics to {metrics_json} and {metrics_csv}")
-
-
-def _coarse_label(coarse_Nh: int | None) -> str:
-    return "cgOFF" if coarse_Nh is None else f"cgNH{int(coarse_Nh)}"
-
-
-def _run_label(
-    *,
-    coarse_Nh: int | None,
-    design_psd_enabled: bool,
-) -> str:
-    label = _coarse_label(coarse_Nh)
-    if design_psd_enabled:
-        return f"{label}_designPSD"
-    return label
-
-
-def _resolve_requested_coarse_settings(
-    *,
-    mode: Literal["large", "short"],
-    coarse_grain: Literal["off", "on", "both"],
-    coarse_nh: int | None,
-) -> list[int | None]:
-    default_nh = MODE_CONFIG[mode]["default_coarse_Nh"]
-
-    if coarse_grain == "off":
-        return [None]
-
-    if coarse_grain == "on":
-        nh = coarse_nh if coarse_nh is not None else default_nh
-        if nh is None:
-            raise ValueError(
-                f"Mode '{mode}' has no default coarse Nh. "
-                "Please pass --coarse-nh explicitly."
+            if i == n_channels - 1:
+                ax.set_xlabel("Frequency (Hz)")
+            ax.set_xlim(float(freq_plot[0]), min(XMAX, float(freq_plot[-1])))
+            ax.grid(alpha=0.2, linewidth=0.5)
+            if i == j:
+                panel_label = f"S{i + 1}{j + 1}"
+            elif i < j:
+                panel_label = f"Re[S{i + 1}{j + 1}]"
+            else:
+                panel_label = f"Im[S{i + 1}{j + 1}]"
+            ax.text(
+                0.03,
+                0.96,
+                panel_label,
+                transform=ax.transAxes,
+                ha="left",
+                va="top",
+                fontsize=11,
+                fontweight="semibold",
+                bbox={
+                    "facecolor": "white",
+                    "edgecolor": "none",
+                    "alpha": 0.85,
+                    "pad": 1.5,
+                },
+                zorder=10,
             )
-        return [int(nh)]
 
-    # both
-    nh = coarse_nh if coarse_nh is not None else default_nh
-    if nh is None:
-        raise ValueError(
-            f"Mode '{mode}' has no default coarse Nh, so 'both' is ambiguous. "
-            "Please pass --coarse-nh explicitly."
-        )
-    return [None, int(nh)]
-
-
-def _resolve_single_coarse_setting(
-    *,
-    mode: Literal["large", "short"],
-    coarse_mode: Literal["off", "on"],
-    coarse_nh: int | None,
-) -> int | None:
-    if coarse_mode == "off":
-        return None
-
-    default_nh = MODE_CONFIG[mode]["default_coarse_Nh"]
-    nh = coarse_nh if coarse_nh is not None else default_nh
-    if nh is None:
-        raise ValueError(
-            f"Mode '{mode}' has no default coarse Nh. "
-            "Please pass --coarse-nh explicitly."
-        )
-    return int(nh)
-
-
-def _run_single_configuration(
-    *,
-    ts: MultivariateTimeseries,
-    freq_true_hz: np.ndarray,
-    true_psd: np.ndarray,
-    seed: int,
-    mode: str,
-    N: int,
-    Nb: int,
-    K: int,
-    outdir_base: str,
-    coarse_Nh: int | None,
-    design_psd: tuple[np.ndarray, np.ndarray] | None = None,
-    design_tau: float | None = None,
-) -> None:
-    coarse_grain_config = None
-    if coarse_Nh is not None:
-        if int(coarse_Nh) <= 0:
-            raise ValueError("coarse_Nh must be positive.")
-        coarse_grain_config = dict(
-            enabled=True,
-            Nc=None,
-            Nh=int(coarse_Nh),
+    handles, labels = axes[0, 0].get_legend_handles_labels()
+    if handles:
+        axes[0, 0].legend(
+            handles,
+            labels,
+            loc="upper right",
+            fontsize=9,
+            frameon=True,
+            framealpha=0.9,
         )
 
-    use_design_psd = design_psd is not None
-    label = _run_label(
-        coarse_Nh=coarse_Nh,
-        design_psd_enabled=use_design_psd,
+    fig.subplots_adjust(
+        left=0.08,
+        right=0.98,
+        bottom=0.07,
+        top=0.98,
+        wspace=0.18,
+        hspace=0.12,
     )
-    outdir = f"{outdir_base}_{label}"
-    os.makedirs(outdir, exist_ok=True)
-
-    logger.info(
-        f"Running configuration: mode={mode}, seed={seed}, N={N}, Nb={Nb}, "
-        f"K={K}, coarse={_coarse_label(coarse_Nh)}, "
-        f"design_psd_enabled={use_design_psd}, design_tau={design_tau}"
-    )
-
-    if design_tau is not None and design_tau <= 0.0:
-        raise ValueError("design_tau must be positive when provided.")
-
-    run_kwargs = {}
-    if use_design_psd:
-        run_kwargs["design_psd"] = design_psd
-        run_kwargs["tau"] = design_tau
-
-    idata = run_mcmc(
-        data=ts,
-        n_knots=K,
-        degree=2,
-        diffMatrixOrder=2,
-        n_samples=DEFAULT_N_SAMPLES,
-        n_warmup=DEFAULT_N_WARMUP,
-        num_chains=DEFAULT_NUM_CHAINS,
-        # Keep run outputs compact: no heavy InferenceData file persistence.
-        outdir=None,
-        verbose=True,
-        target_accept_prob=DEFAULT_TARGET_ACCEPT_PROB,
-        max_tree_depth=DEFAULT_MAX_TREE_DEPTH,
-        init_from_vi=DEFAULT_INIT_FROM_VI,
-        vi_steps=DEFAULT_VI_STEPS,
-        vi_guide=DEFAULT_VI_GUIDE,
-        vi_psd_max_draws=DEFAULT_VI_PSD_MAX_DRAWS,
-        vi_lr=VI_LR,
-        Nb=Nb,
-        knot_kwargs=dict(method=DEFAULT_KNOT_METHOD),
-        coarse_grain_config=coarse_grain_config,
-        alpha_delta=DEFAULT_ALPHA_DELTA,
-        beta_delta=DEFAULT_BETA_DELTA,
-        compute_coherence_quantiles=True,
-        true_psd=(freq_true_hz, true_psd),
-        **run_kwargs,
-    )
-    _save_compact_posterior_summary(
-        outdir,
-        idata,
-        freq_true_hz=freq_true_hz,
-        true_psd=true_psd,
-    )
-    metrics = _extract_run_metrics(
-        idata,
-        seed=seed,
-        mode=mode,
-        N=N,
-        Nb=Nb,
-        coarse_Nh=coarse_Nh,
-        design_tau=design_tau,
-        design_psd_enabled=use_design_psd,
-    )
-    _save_metrics_summary(outdir, metrics)
-
-
-def simulation_study(
-    *,
-    seed: int = 0,
-    mode: Literal["large", "short"] = "short",
-    coarse_grain: Literal["off", "on", "both"] = "both",
-    coarse_nh: int | None = None,
-    run_design_psd: bool = False,
-    design_tau: float | None = None,
-    design_coarse: Literal["off", "on"] = "off",
-    outdir: str = OUT,
-    K: int = 10,
-) -> None:
-    cfg = MODE_CONFIG[mode]
-    N = int(cfg["N"])
-    Nb = int(cfg["Nb"])
-
-    requested_settings = _resolve_requested_coarse_settings(
-        mode=mode,
-        coarse_grain=coarse_grain,
-        coarse_nh=coarse_nh,
+    fig.text(
+        0.015,
+        0.5,
+        "Spectral density [1/Hz]",
+        rotation=90,
+        va="center",
+        ha="center",
+        fontsize=12,
     )
 
-    print(
-        f">>>> Running simulation with mode={mode}, N={N}, Nb={Nb}, "
-        f"K={K}, seed={seed}, coarse_grain={coarse_grain}, "
-        f"requested_settings={requested_settings}, "
-        f"run_design_psd={run_design_psd}, design_coarse={design_coarse}, "
-        f"design_tau={design_tau} <<<<"
-    )
+    out_path = outdir / "psd_vi_vs_nuts_overlay.png"
+    fig.savefig(out_path, dpi=200, bbox_inches="tight")
+    plt.close(fig)
+    logger.info(f"Saved overlay figure to {out_path}")
+
+
+def run_analysis() -> None:
+    OUTDIR.mkdir(parents=True, exist_ok=True)
 
     _log_var_coefficients()
-
     spectral_radius = _companion_spectral_radius(VAR_COEFFS)
-    is_stationary = bool(spectral_radius < 1.0)
     logger.info(
         f"Stationarity check (companion spectral radius): {spectral_radius:.6f}"
     )
-    if not is_stationary:
+    if spectral_radius >= 1.0:
         raise ValueError(
             f"Non-stationary VAR coefficients (spectral radius={spectral_radius:.6f})."
         )
@@ -605,147 +691,114 @@ def simulation_study(
         n_samples=N,
         var_coeffs=VAR_COEFFS,
         sigma=SIGMA,
-        seed=seed,
-        fs=DEFAULT_FS,
-        burn_in=DEFAULT_BURN_IN,
+        seed=SEED,
+        fs=FS,
+        burn_in=BURN_IN,
     )
     if not np.all(np.isfinite(data)):
         raise ValueError("Generated VAR samples contain non-finite values.")
-    ts = MultivariateTimeseries(t=t, y=data)
 
-    freq_true_hz = np.fft.rfftfreq(N, d=1.0 / DEFAULT_FS)[1:]
+    ts = MultivariateTimeseries(t=t, y=data)
+    freq_true_hz = np.fft.rfftfreq(N, d=1.0 / FS)[1:]
     true_psd = _calculate_true_var_psd_hz(
         freq_true_hz,
         VAR_COEFFS,
         SIGMA,
-        fs=DEFAULT_FS,
+        fs=FS,
     )
 
-    outdir_base = f"{HERE}/{outdir}/seed_{seed}_{mode}_N{N}_K{K}"
+    logger.info(
+        f"Running fixed analysis with seed={SEED}, N={N}, Nb={NB}, K={K}, coarse={COARSE_NH}"
+    )
+    idata = run_mcmc(
+        data=ts,
+        n_knots=K,
+        degree=2,
+        diffMatrixOrder=2,
+        n_samples=N_SAMPLES,
+        n_warmup=N_WARMUP,
+        num_chains=NUM_CHAINS,
+        outdir=str(OUTDIR),
+        verbose=True,
+        target_accept_prob=TARGET_ACCEPT_PROB,
+        max_tree_depth=MAX_TREE_DEPTH,
+        init_from_vi=INIT_FROM_VI,
+        vi_steps=VI_STEPS,
+        vi_guide=VI_GUIDE,
+        vi_psd_max_draws=VI_PSD_MAX_DRAWS,
+        vi_lr=VI_LR,
+        Nb=NB,
+        knot_kwargs={"method": KNOT_METHOD},
+        coarse_grain_config={
+            "enabled": True,
+            "Nc": None,
+            "Nh": COARSE_NH,
+        },
+        coarse_grain_config_vi={
+            "enabled": True,
+            "Nc": None,
+            "Nh": STAGE1_VI_NH,
+        },
+        alpha_delta=ALPHA_DELTA,
+        beta_delta=BETA_DELTA,
+        compute_coherence_quantiles=True,
+        true_psd=(freq_true_hz, true_psd),
+    )
 
-    for coarse_Nh_setting in requested_settings:
-        _run_single_configuration(
-            ts=ts,
-            freq_true_hz=freq_true_hz,
-            true_psd=true_psd,
-            seed=seed,
-            mode=mode,
-            N=N,
-            Nb=Nb,
-            K=K,
-            outdir_base=outdir_base,
-            coarse_Nh=coarse_Nh_setting,
-        )
+    posterior_group = getattr(idata, "posterior_psd", None)
+    vi_group = getattr(idata, "vi_posterior_psd", None)
+    if posterior_group is None:
+        raise ValueError("Expected posterior_psd in inference output.")
+    if vi_group is None:
+        raise ValueError("Expected vi_posterior_psd in inference output.")
 
-    if run_design_psd:
-        design_coarse_nh = _resolve_single_coarse_setting(
-            mode=mode,
-            coarse_mode=design_coarse,
-            coarse_nh=coarse_nh,
-        )
-        _run_single_configuration(
-            ts=ts,
-            freq_true_hz=freq_true_hz,
-            true_psd=true_psd,
-            seed=seed,
-            mode=mode,
-            N=N,
-            Nb=Nb,
-            K=K,
-            outdir_base=outdir_base,
-            coarse_Nh=design_coarse_nh,
-            design_psd=(freq_true_hz, true_psd),
-            design_tau=design_tau,
-        )
+    nuts_summary = _extract_group_quantiles(posterior_group)
+    vi_summary = _extract_group_quantiles(vi_group)
+    vi_summary = _maybe_interp_summary(vi_summary, nuts_summary["freq"])
+
+    periodogram = None
+    if hasattr(idata, "observed_data") and "periodogram" in idata.observed_data:
+        periodogram_da = idata.observed_data["periodogram"]
+        periodogram = np.asarray(periodogram_da.values)
+        if periodogram.shape[0] != nuts_summary["freq"].size:
+            periodogram = _interp_complex_matrix(
+                nuts_summary["freq"],
+                np.asarray(periodogram_da.coords["freq"].values, dtype=np.float64),
+                periodogram,
+            )
+
+    truth_on_posterior_grid = _interp_complex_matrix(
+        nuts_summary["freq"],
+        freq_true_hz,
+        true_psd,
+    )
+
+    _save_compact_summary(
+        OUTDIR,
+        nuts_summary=nuts_summary,
+        vi_summary=vi_summary,
+        periodogram=periodogram,
+        truth=truth_on_posterior_grid,
+    )
+
+    metrics = _build_metrics_summary(idata)
+    metrics_path = OUTDIR / "metrics_summary.json"
+    with open(metrics_path, "w", encoding="utf-8") as handle:
+        json.dump(metrics, handle, indent=2, sort_keys=True)
+    logger.info(f"Saved metrics summary to {metrics_path}")
+
+    _plot_vi_vs_nuts_overlay(
+        OUTDIR,
+        nuts_summary=nuts_summary,
+        vi_summary=vi_summary,
+        truth=truth_on_posterior_grid,
+        periodogram=periodogram,
+    )
+
+
+def main() -> None:
+    run_analysis()
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description=(
-            "Multivariate PSD study with in-script VAR(2) data generation "
-            "and mode presets."
-        )
-    )
-    parser.add_argument(
-        "seed",
-        type=int,
-        nargs="?",
-        default=0,
-        help="Random seed (default: 0).",
-    )
-    parser.add_argument(
-        "mode",
-        nargs="?",
-        choices=("large", "short"),
-        default="short",
-        help=(
-            "Preset size: short=2K samples with Nb=2, "
-            "large=16K samples with Nb=4."
-        ),
-    )
-    parser.add_argument(
-        "--coarse-grain",
-        choices=("off", "on", "both"),
-        default="both",
-        help="Run without coarse-graining, with coarse-graining, or both.",
-    )
-    parser.add_argument(
-        "--coarse-nh",
-        type=int,
-        default=None,
-        help=(
-            "Override coarse-graining Nh. "
-            "If omitted, the mode default is used."
-        ),
-    )
-    parser.add_argument(
-        "--run-design-psd",
-        action="store_true",
-        help=(
-            "Run an additional third analysis that shrinks toward a provided "
-            "design PSD (here: the theoretical VAR PSD)."
-        ),
-    )
-    parser.add_argument(
-        "--design-tau",
-        type=float,
-        default=None,
-        help=(
-            "Optional tau for extra L2 shrinkage toward design weights. "
-            "If omitted, only smoothness around design is used."
-        ),
-    )
-    parser.add_argument(
-        "--design-coarse",
-        choices=("off", "on"),
-        default="off",
-        help=(
-            "Coarse-grain setting for the additional design-PSD run. "
-            "Default: off."
-        ),
-    )
-    parser.add_argument(
-        "--K",
-        type=int,
-        default=50,
-        help="Number of knots.",
-    )
-    parser.add_argument(
-        "--outdir",
-        type=str,
-        default=OUT,
-        help="Base output directory.",
-    )
-
-    args = parser.parse_args()
-    simulation_study(
-        seed=args.seed,
-        mode=args.mode,
-        coarse_grain=args.coarse_grain,
-        coarse_nh=args.coarse_nh,
-        run_design_psd=args.run_design_psd,
-        design_tau=args.design_tau,
-        design_coarse=args.design_coarse,
-        outdir=args.outdir,
-        K=args.K,
-    )
+    main()
