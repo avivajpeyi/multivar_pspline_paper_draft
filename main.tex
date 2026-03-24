@@ -133,14 +133,15 @@ $\Y(f)=N_b \bar{\I}(f)$.
 Therefore, $\Y(f)$ has a $d$-dimensional complex Wishart distribution\footnote{ We use the notation $\A \sim {\cal CW}_d(\M,m)$  if  the $d\times d$ Hermitian positive definite random matrix $\A$ has a complex Wishart distribution with mean $m\M$ and $m$ degrees of freedom. Its density is proportional to $\det(\M)^{-m}\exp(-\tr[\M^{-1}\A])$.} with $N_b$ degrees of freedom.
 This is consistent with the independent $d$-dimensional complex Wishart distribution with one degree of freedom for each individual periodogram, i.e.,
 \[\I^{(i)}(f_k)\sim {\cal CW}_d(\S(f_k),1). \]
-Using the eigendecomposition\\ $\Y(f_k)=\sum_{\nu=1}^p \lambda^{(k)}_\nu \v^{(k)}_\nu\v^{(k)*}_\nu=\sum_{\nu=1}^p  \u^{(k)}_\nu\u^{(k)*}_\nu$ with $\u^{(k)}_\nu=\sqrt{\lambda^{(k)}_l}\v^{(k)}_\nu$, 
+Using the eigendecomposition\\ $\Y(f_k)=\sum_{\nu=1}^p \lambda^{(k)}_\nu \v^{(k)}_\nu\v^{(k)*}_\nu=\sum_{\nu=1}^p  \u^{(k)}_\nu\u^{(k)*}_\nu$ with renormalized eigenvectors $\u^{(k)}_\nu=\sqrt{\lambda^{(k)}_l}\v^{(k)}_\nu$, 
 the likelihood function can be expressed as
 \begin{eqnarray}\label{eq:log-like}
   &\propto &   \prod_{k=1}^{N_l} \left|\S(f_k)\right|^{-N_b} \exp\left(- \tr\left[ \S(f_k)^{-1} \Y(f_k)\right]\right)\\
   &\propto &   \prod_{k=1}^{N_l} \left|\S(f_k)\right|^{-N_b} \exp\left(- \sum_{\nu=1}^p\u_\nu^{(k)*}\S(f_k)^{-1}\u_\nu^{(k)}\right)
  % &\propto &  \prod_{k=1}^{N_l} \left|\S(f_k)\right|^{-N_b} \prod_{\nu=1}^p %\exp\left(-\u_\nu^{(k)*}\S(f_k)^{-1}\u_\nu^{(k)}\right)
 \end{eqnarray}
-
+To further set notation, let $\U^{(k)}=\left(u_{j\nu}^{(k)}\right)$ denote the $p\times p$ matrix with column vectors $\u_\nu^{(k)}$ and row vectors denoted by $\u_{(j)}^{(k)}$.
+Let $\u_{(j)}=\left(\u_{(j)}^{(1)},\ldots,\u_{(j)}^{(N_l)}\right)$ for $j=1,\ldots,p$.
 
 \subsection{Parameterization using the Cholesky Decomposition}
 Following the approach of \citet{RosenOri2007Aeom,Hu2023}, we parameterize the inverse spectral density matrix using its Cholesky decomposition. 
@@ -150,7 +151,7 @@ Specifically, we write
 \end{equation}
 where $\mathbf{D}_k$ is a diagonal matrix with positive diagonal elements $\delta_{1k}^2, \delta_{2k}^2, \ldots, \delta_{pk}^2$ and
 \begin{align}
-\bold{T}_k = \begin{pmatrix}
+\mathbf{T}_k = \begin{pmatrix}
 1 & 0 & 0 & \cdots & 0 \\
 -\theta_{21}^{(k)} & 1 & 0 & \cdots & 0 \\
 -\theta_{31}^{(k)} & -\theta_{32}^{(k)} & 1 & \ddots & \vdots \\
@@ -164,46 +165,51 @@ is a $p \times p$ complex unit lower triangular matrix with $\theta_{il}^{(k)}$ 
 This parameterization allows us to rewrite the likelihood as the product of $p$ likelihoods $\mathcal{L}_j$ parameterised by $\btheta_j,\bdelta_j$, for $j=1,\ldots,p$,
 \begin{align}
  \mathcal{L}(\d|\S)
- \propto \prod_{j=1}^{p} \mathcal{L}_j(\u_j,\u_{<j}|{\btheta_j,\bdelta_j}),
+ \propto \prod_{j=1}^{p} \mathcal{L}_j(\u_{(j)},\u_{(<j)}|{\btheta_j,\bdelta_j}),
  \label{eq:likelihood}
 \end{align}
 where
 \begin{align}
-\mathcal{L}_j(&\u_j,\u_{<j}|\btheta_j,\bdelta_j) \propto \nonumber \\
+\mathcal{L}_j(&\u_{(j)},\u_{(<j)}|\btheta_j,\bdelta_j) \propto \nonumber \\
 &  \prod_{k=1}^{N} \delta_{jk}^{-2N
 _b} \exp \left(\frac{-\sum_{\nu=1}^p\left|u_{j\nu}^{(k)}-\sum_{l=1}^{j-1}\theta_{jl}^{(k)}u_{l\nu}^{(k)} \right|^2}{T\delta_{jk}^2} \right)
 \label{eq:likelihoodj}
 \end{align}%
-and $\u_{<j}^{(k)}$ denotes the components of the vectors $\u_\nu^{(k)}$, $\nu=1,\ldots,p$, preceding the $j$th component, the parameters $\btheta_j,\bdelta_j$ represent the set of $\theta_k$ and $\delta_k$ for the $j$th component of the multivariate time series, $\theta_{jl}^{(k)}$ represents the corresponding element in the matrix $T_k$ for any $j>l$, and $\theta_{jl}^{(k)} = 1$ when $j=l$. %$d_j(f_k)$ denotes the Fourier coefficient of the $j$th component, and $\d_j=(d_j(f_1),\ldots,d_j(f_N))^\intercal$.
-Explicitly, if we have 3 channels as in the LISA case, we have 3 independent likelihoods ${\mathcal L}_j$ that depend on subvectors $\bdelta_1$, $(\bdelta_2,\btheta_{21})$, and $(\bdelta_3,\btheta_{31},\btheta_{32})$ of the total parameter vector:
+and $\u_{(<j)}=\left(\u_{(1)},\ldots,\u_{(j-1)}\right)$ for $j>1$ (and the empty vector for $j=1$),
+%denotes the components of the vectors $\u_({^{(k)}$, $\nu=1,\ldots,p$, preceding the $j$th component, 
+$\theta_{jl}^{(k)}$ represents the corresponding element in the matrix $T_k$ for any $j>l$, and $\theta_{jl}^{(k)} = 1$ when $j=l$. 
+The parameters $\btheta_j,\bdelta_j$ represent the set of $\theta_{jl}^{(k)}$ and $\delta_{jk}$ corresponding to dimension $j$ for $l=1,\ldots,j-1$ and $k=1,\ldots,N_l$.
+
+%$d_j(f_k)$ denotes the Fourier coefficient of the $j$th component, and $\d_j=(d_j(f_1),\ldots,d_j(f_N))^\intercal$.
+Explicitly, if we have $p=3$ channels as in the LISA case, we have three independent likelihoods ${\mathcal L}_j$ that depend on subvectors $\bdelta_1$, $(\bdelta_2,\btheta_{2})$, and $(\bdelta_3,\btheta_{3})$ of the total parameter vector:
 \begin{align}
-\mathcal{L}_1(&\u_1|\bdelta_1) \propto \nonumber \\
+\mathcal{L}_1(&\u_{(1)}|\bdelta_1) \propto \nonumber \\
 &  \prod_{k=1}^{N} \delta_{1k}^{-2N_b} \exp \left(\frac{-\sum_{\nu=1}^p\left|u_{1\nu}^{(k)}\right|^2}{T\delta_{1k}^2} \right)
 \label{eq:likelihood1}
 \end{align}%
 \begin{align}
-\mathcal{L}_2(&\u_1,\u_2|\btheta_{21},\bdelta_2) \propto \nonumber \\
+\mathcal{L}_2(&\u_{(1)},\u_{(2)}|\btheta_{2},\bdelta_2) \propto \nonumber \\
 &  \prod_{k=1}^{N} \delta_{2k}^{-2N_b} \exp \left(\frac{-\sum_{\nu=1}^p\left|u_{2\nu}^{(k)}-\theta_{21}^{(k)}u_{1\nu}^{(k)} \right|^2}{T\delta_{2k}^2} \right)
 \label{eq:likelihood2}
 \end{align}%
 \begin{align}
-\mathcal{L}_3(&\u_1,\u_2,\u_3|\btheta_{31},\btheta_{32},\bdelta_3) \propto \nonumber \\
+\mathcal{L}_3(&\u_{(1)},\u_{(2)},\u_{(3)}|\btheta_{3},\bdelta_3) \propto \nonumber \\
 &  \prod_{k=1}^{N} \delta_{3k}^{-2N_b} \exp \left(\frac{-\sum_{\nu=1}^p\left|u_{3\nu}^{(k)}-\theta_{31}^{(k)}u_{1\nu}^{(k)} -\theta_{32}^{(k)}u_{2\nu}^{(k)}\right|^2}{T\delta_{3k}^2} \right)
 \label{eq:likelihood3}
 \end{align}%
 Note that a factorised likelihood does not in general imply a factorised posterior. Here, however, the posterior also factorises because we place independent priors across these three parameter blocks,
 \begin{align}
- \pi(\bdelta_1,\bdelta_2,\btheta_{21},&\bdelta_3,\btheta_{31},\btheta_{32})
+ \pi(\bdelta_1,\bdelta_2,\btheta_{2},&\bdelta_3,\btheta_{3})
   = \notag \\
- & \pi(\bdelta_1)\,\pi(\bdelta_2,\btheta_{21})\,\pi(\bdelta_3,\btheta_{31},\btheta_{32}),
+ & \pi(\bdelta_1)\,\pi(\bdelta_2,\btheta_{2})\,\pi(\bdelta_3,\btheta_{3}),
  \\
- p(\bdelta_1,\bdelta_2,\btheta_{21},&\bdelta_3,\btheta_{31},\btheta_{32}\mid \u_1,\u_2,\u_3)
+ p(\bdelta_1,\bdelta_2,\btheta_{2},&\bdelta_3,\btheta_{3}\mid \u_{(1)},\u_{(2)},\u_{(3)})
   \propto \notag \\
- & \mathcal{L}_1(\u_1\mid \bdelta_1)\,\pi(\bdelta_1)\times \notag \\
- & \mathcal{L}_2(\u_1,\u_2\mid \bdelta_2,\btheta_{21})\,\pi(\bdelta_2,\btheta_{21})\times \notag \\
- & \mathcal{L}_3(\u_1,\u_2,\u_3\mid \bdelta_3,\btheta_{31},\btheta_{32})\,\pi(\bdelta_3,\btheta_{31},\btheta_{32}).
+ & \mathcal{L}_1(\u_{(1)}\mid \bdelta_1)\,\pi(\bdelta_1)\times \notag \\
+ & \mathcal{L}_2(\u_{(1)},\u_{(2)}\mid \bdelta_2,\btheta_{2})\,\pi(\bdelta_2,\btheta_{2})\times \notag \\
+ & \mathcal{L}_3(\u_{(1)},\u_{(2)},\u_{(3)}\mid \bdelta_3,\btheta_{3})\,\pi(\bdelta_3,\btheta_{3}).
 \end{align}
-Hence Bayes' rule yields three independent posterior factors corresponding to $\bdelta_1$, $(\bdelta_2,\btheta_{21})$, and $(\bdelta_3,\btheta_{31},\btheta_{32})$. This means we can run an MCMC chain for each block separately and in parallel, which should reduce the computation time.                                                                                                                                                                         
+Hence Bayes' rule yields three independent posterior factors corresponding to $\bdelta_1$, $(\bdelta_2,\btheta_{2})$, and $(\bdelta_3,\btheta_{3})$. This means we can run an MCMC chain for each block separately and in parallel, which in general reduces the computation time.                                                                                                                                                                         
 
 
 
