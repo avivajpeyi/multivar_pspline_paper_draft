@@ -235,7 +235,8 @@ where we use the eigendecomposition of $\Y_h^{*}=\sum_{\nu=1}^p \lambda^{(h)}_\n
 
 
 \subsection{P-spline Modeling}
-We model the frequency-dependent parameters using penalized B-splines. Specifically, we represent:
+We model the frequency-dependent parameters using penalized B-splines. 
+Specifically, we represent:
 \begin{align}
 \log \delta_{jk}^2 &= \sum_{m=1}^{M_j} B_m(f_k) w_{j,m}^{(\delta)} \label{eq:delta_spline}\\
 \Re[\theta_{jl}(f_k)] &= \sum_{m=1}^{M_{jl}} B_m(f_k) w_{jl,m}^{(\Re)} \label{eq:theta_re_spline}\\
@@ -244,7 +245,8 @@ We model the frequency-dependent parameters using penalized B-splines. Specifica
 where $B_m(f_k)$ are B-spline basis functions evaluated at frequency $f_k$, $M_j$ and $M_{jl}$ are the numbers of basis functions for the diagonal and off-diagonal components respectively, and $w_{j,m}^{(\delta)}$, $w_{jl,m}^{(\Re)}$, $w_{jl,m}^{(\Im)}$ are the corresponding spline coefficients.
 
 Knots are placed adaptively following \citet{MaturanaRussel2019}\avi{add to bib}.
-For each Cholesky component, the absolute values of the empirical periodogram are normalised to a probability mass function over frequency; knots are then positioned at equally-spaced quantiles of the resulting cumulative distribution.
+For each Cholesky component, the absolute values of the empirical periodogram are normalised to a probability mass function over frequency. 
+Knots are then positioned at equally-spaced quantiles of the resulting cumulative distribution.
 The effect is that knots cluster where the spectrum varies most rapidly and spread out in smooth regions, without requiring manual tuning.
 
 Smoothness is enforced via the penalty matrix $\bold{P}_j$ with entries
@@ -297,7 +299,6 @@ Credible intervals widen toward the band edges where fewer datapoints are availa
 Cross-spectral real and imaginary parts concentrate near their theoretical values, with shrinkage preventing spurious coherence.
 The P-spline estimates accurately recover both PSD components (diagonal elements) and cross-spectral components (off-diagonal real and imaginary parts). 
 The posterior medians closely follow the theoretical spectra, and the 90\% credible intervals demonstrate appropriate uncertainty quantification across all spectral components.
-
 
 
 Following Liu et at, we simulate 500 independent realisations of a bivariate time series from a vector autoregressive model of order 2, VAR(2), using three different sample sizes $n=256,512,1024$ (refer to \citet[Section~4.2,][]{Liu2023} for the definitions of the VAR(2) models).
