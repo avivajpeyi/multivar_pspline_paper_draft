@@ -419,7 +419,7 @@ MCMC convergence was satisfactory across all realisations: $\hat{R} \leq 1.01$ f
 Figure~\ref{fig:vi_vs_nuts_var3} shows the full $3\times3$ spectral matrix for a representative $n=16{,}384$ realisation ($\mathrm{RIAE}=0.114$, coverage $84\%$), with NUTS and VI posteriors overlaid.
 Both samplers recover the diagonal PSDs and off-diagonal cross-spectra, and their medians are nearly indistinguishable, supporting the use of VI as a fast alternative to NUTS.
 
-\begin{table}[htbp]
+\begin{table*}[htbp]
   \centering
   \caption{3D VAR(2) simulation results (100 realisations, mean $\pm$ std).
     Coverage is the fraction of (frequency, matrix element) pairs where the true
@@ -435,7 +435,7 @@ Both samplers recover the diagonal PSDs and off-diagonal cross-spectra, and thei
     16384 & 4 & 4    & 2048 & 0.872 \pm 0.042 & 0.109 \pm 0.004 & 17603 \pm 2214 \\
     \bottomrule
   \end{NiceTabular}
-\end{table}
+\end{table*}
 
 \begin{figure}
   \centering
@@ -448,12 +448,12 @@ Both samplers recover the diagonal PSDs and off-diagonal cross-spectra, and thei
   \label{fig:vi_vs_nuts_var3}
 \end{figure}
 
-\begin{figure}
-  \centering
-  \includegraphics[width=1\linewidth]{figures/var3d_simulation_idata.png}
-  \caption{Three-dimensional VAR(2): posterior median (solid) and 90\% credible bands for the full $3 \times 3$ spectral density matrix. Diagonal elements show PSD estimates; off-diagonal elements display real and imaginary parts of cross-spectra. The model recovers both diagonal and off-diagonal spectral structure with appropriate uncertainty quantification.}
-  \label{fig:var3_simulation_idata}
-\end{figure}
+% \begin{figure}
+%   \centering
+%   \includegraphics[width=1\linewidth]{figures/var3d_simulation_idata.png}
+%   \caption{Three-dimensional VAR(2): posterior median (solid) and 90\% credible bands for the full $3 \times 3$ spectral density matrix. Diagonal elements show PSD estimates; off-diagonal elements display real and imaginary parts of cross-spectra. The model recovers both diagonal and off-diagonal spectral structure with appropriate uncertainty quantification.}
+%   \label{fig:var3_simulation_idata}
+% \end{figure}
 
 
 \subsection{LISA }
