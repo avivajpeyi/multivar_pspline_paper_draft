@@ -21,17 +21,18 @@
 	%floatfix,
 ]{revtex4-2}
 
-\usepackage{xcolor}
-\usepackage{graphicx}% Include figure files
-\usepackage{dcolumn}% Align table columns on decimal point
-\usepackage{bm}% bold math
-\usepackage{hyperref}% add hypertext capabilities
-\usepackage{xcolor}
-\usepackage{verbatim}
-\usepackage{nicematrix}
-\usepackage{booktabs}
-\usepackage{siunitx}
-\usepackage{changes}
+	\usepackage{xcolor}
+	\usepackage{graphicx}% Include figure files
+	\graphicspath{{figures/}}
+	\usepackage{dcolumn}% Align table columns on decimal point
+	\usepackage{bm}% bold math
+	\usepackage{hyperref}% add hypertext capabilities
+	\usepackage{xcolor}
+	\usepackage{verbatim}
+	\usepackage{nicematrix}
+	\usepackage{booktabs}
+	\usepackage{siunitx}
+	\usepackage[commandnameprefix=ifneeded]{changes}
 \definechangesauthor[name={Avi}, color=blue]{AV}
 \newcommand{\mhadded}[1]{{\color{blue}#1}}% math-mode highlight for added content
 
@@ -186,8 +187,8 @@
 	\[
 		\I^{(i)}(f_{k})\sim{\cal CW}_{d}(\mhadded{T_b}\S(f_{k}),1),
 		\qquad
-		\added[id=AV]{$\Y(f_k)\sim{\cal CW}_{d}(T_b\S(f_{k}),N_b).$}
-	\]
+		\added[id=AV]{\Y(f_k)\sim{\cal CW}_{d}(T_b\S(f_{k}),N_b).}
+		\]
 	Using the eigendecomposition\\ $\Y(f_{k})=\sum_{\nu=1}^{p} \lambda^{(k)}_{\nu} \v
 	^{(k)}_{\nu}\v^{(k)*}_{\nu}=\sum_{\nu=1}^{p} \u^{(k)}_{\nu}\u^{(k)*}_{\nu}$ with
 	renormalized eigenvectors $\u^{(k)}_{\nu}=\sqrt{\lambda^{(k)}_{l}}\v^{(k)}_{\nu}$,
@@ -549,7 +550,7 @@
 	\subsection{LISA }
 	\begin{figure*}[t]
 		\centering
-		\includegraphics[width=0.98\textwidth]{figures/lisa_xyz_freq_units.pdf}
+		\includegraphics[width=0.98\textwidth]{lisa_xyz_freq_units.pdf}
 		\caption{XYZ-basis LISA duration comparison for the paper configuration
 		($K=100$, $d=2$, uniform knots, $N_{c}=8192$, 7-day blocks, and null-band
 		excision at 0.030, 0.060, and 0.090 Hz with half-width 1 mHz). Colored curves
@@ -560,7 +561,7 @@
 
 	\begin{figure*}[t]
 		\centering
-		\includegraphics[width=0.98\textwidth]{figures/lisa_xyz_residuals_freq_units.pdf}
+		\includegraphics[width=0.98\textwidth]{lisa_xyz_residuals_freq_units.pdf}
 		\caption{Posterior-median residuals for the XYZ LISA runs in
 		Figure~\ref{fig:lisa_xyz}. Residual magnitudes contract from 30 to 90 days and
 		are smallest for the 365-day run, although the longest run has poor convergence
