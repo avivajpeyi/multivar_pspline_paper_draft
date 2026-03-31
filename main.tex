@@ -152,6 +152,7 @@
 	We divide the time series into $N_{b}$ equal-sized blocks
 	$\Z=(\Z^{(1)},\ldots,\Z^{(N_{b})})^{\intercal}$ with each block a $p$-dimensional
 	time series each of length $L_{b}=n/N_{b}$ \added[id=AV]{and duration $T_b=L_b\Delta_t=T/N_b$}.
+	\avi{Throughout this section I replaced $T\to T_b$ and $N\to N_l$ in the blocked likelihood equations. Reason: the DFT $\d^{(i)}$ is computed per block of length $L_b$, not over the full series of length $n$. With our DFT convention ($\Delta_t\sum$), the covariance of $\d^{(i)}$ is $T_b\,\S(f_k)$, not $T\,\S(f_k)$, and the product runs over $N_l=L_b/2$ block frequencies, not $N=n/2$. The previous equations incorrectly used full-series quantities where block quantities belong.}
 	The discrete Fourier transform of each
 	block is denoted by $\d^{(i)}$, $i=1,\ldots,N_{b}$. Assuming stationarity of the
 	time series and independence among different blocks, the overall blocked
