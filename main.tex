@@ -99,7 +99,6 @@
 	including the detection of massive black hole mergers, galactic binary systems,
 	and potential primordial gravitational wave backgrounds.
 
-	\newpage
 	\section{Multivariate P-splines}
 
 	\subsection{Likelihood}
@@ -310,11 +309,11 @@
 	distribution. The effect is that knots cluster where the spectrum varies most rapidly
 	and spread out in smooth regions, without requiring manual tuning.
 
-	Each component $j$ has its own penalty matrix $\bold{P}_{j}$ with entries
+	Each Cholesky component $j$ has its own penalty matrix $\bold{P}_{j}$ with entries
 	\begin{equation}
 		[\bold{P}_{j}]_{lm}= \int_{0}^{1} B_{l}''(t)\, B_{m}''(t)\, \mathrm{d}t.
 	\end{equation}
-	Unlike the finite-difference approximation $\bold{D}_{2}^{\top}\bold{D}_{2}$, this
+	Unlike the finite-difference approximation $\bold{D}_{2}^{\top}\bold{D}_{2}$ \avi{used in Eliers}, this
 	integral formulation is exact for non-uniform knot sequences~\cite{ospline_paper}.
 
 	\subsection{Bayesian Inference}
@@ -347,7 +346,10 @@
 	NUTS. We then run a full NUTS warm-up phase of 2000 steps, during which the
 	mass matrix is adapted, before collecting posterior samples.
 
-	Convergence is assessed using the potential scale reduction factor ($\hat{R} < 1.01$), effective sample size ($\mathrm{ESS} > 400$), E-BFMI ($> 0.3$), absence of divergent transitions, and absence of maximum tree-depth saturation. All results in Section~\ref{sec:application} passed these criteria.
+	Convergence is assessed using the potential scale reduction factor ($\hat{R} < 1.01$), effective 
+    sample size ($\mathrm{ESS} > 400$), E-BFMI ($> 0.3$), absence of divergent transitions, and absence 
+    of maximum tree-depth saturation. All results in Section~\ref{sec:application} passed these 
+    criteria.
 
 	\section{\label{sec:application}Application}
 
@@ -463,8 +465,6 @@
 	\begin{align}
 		\mathbf{S}(f) = \frac{2}{f_{s}}\,H(f)\,\Sigma\,H(f)^{*}, \qquad H(f)=\left(I-\sum_{\ell=1}^{2}A_{\ell} e^{-i2\pi f\ell/f_s}\right)^{-1}.
 	\end{align}
-
-	\avi{Ask jianan to check -- im pretty sure, its basically the same as the hu and prado paper. }
 
 	We generate 100 independent realisations with fixed length $n=16{,}384$, (burn-in
 	512 time points), and sampling frequency $f_{s}=1$. For each realisation we
