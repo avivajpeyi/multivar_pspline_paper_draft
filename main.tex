@@ -547,36 +547,61 @@
 	% \end{figure}
 
 	\subsection{LISA }
-	\begin{figure}
+	\begin{figure*}[t]
 		\centering
-		\includegraphics[width=1\linewidth]{figures/lisa.png}
-		\caption{Three-channel LISA-like example: posterior medians (solid) and 90\%
-		credible intervals (shaded) for the PSD and cross-spectra. Grey curves show the
-		empirical periodogram. Estimates remain PSD by construction via the Cholesky
-		parameterization.}
-		\label{fig:lisa_psd}
-	\end{figure}
+		\includegraphics[width=0.98\textwidth]{figures/lisa_xyz_freq_units.pdf}
+		\caption{XYZ-basis LISA duration comparison for the paper configuration
+		($K=100$, $d=2$, uniform knots, $N_{c}=8192$, 7-day blocks, and null-band
+		excision at 0.030, 0.060, and 0.090 Hz with half-width 1 mHz). Colored curves
+		show posterior medians and 90\% credible intervals for 30, 90, and 365 days of
+		data; grey curves show the corresponding empirical periodograms.}
+		\label{fig:lisa_xyz}
+	\end{figure*}
 
-	We apply the multivariate P-spline model to three LISA time-delay interferometry
-	(TDI) channels and estimate their joint spectral density matrix across the milli-Hz
-	band. The PSD (diagonal panels) display the expected broadband shape with a
-	steady rise toward higher frequencies, while the posterior medians provide a smooth
-	denoising of the raw periodogram. Uncertainty is smallest in the well-constrained
-	mid-band and widens near the frequency extremes where fewer datapoints are
-	available. The off-diagonal terms show weak inter-channel coupling: the real
-	parts remain close to zero across most of the band and the imaginary parts are
-	consistent with zero within credible intervals. This behaviour is compatible with
-	the \avi{expected noise correlations between AET TDI channels, which are designed to be largely independent.}
-	Importantly, the Cholesky parameterization maintains Hermitian positive definiteness
-	at every frequency, ensuring that the estimated matrix can be safely used for
-	downstream analyses in a global-fit framework. From an inference perspective,
-	the LISA results illustrate the spline basis captures smooth, instrument-driven
-	trends without requiring an explicit parametric transfer model; localized
-	deviations (e.g., narrow instrumental features) can be accommodated by
-	increasing the basis resolution locally or by augmenting the model with
-	parametric components (e.g., line models to capture the transfer function dips).
+	\begin{figure*}[t]
+		\centering
+		\includegraphics[width=0.98\textwidth]{figures/lisa_xyz_residuals_freq_units.pdf}
+		\caption{Posterior-median residuals for the XYZ LISA runs in
+		Figure~\ref{fig:lisa_xyz}. Residual magnitudes contract from 30 to 90 days and
+		are smallest for the 365-day run, although the longest run has poor convergence
+		diagnostics (Table~\ref{tab:lisa_results}).}
+		\label{fig:lisa_xyz_residuals}
+	\end{figure*}
 
-	\avi{I think we should do this also for LISA data with correlation. Similar to Jianan's paper.}
+	We apply the multivariate P-spline model to three simulated LISA TDI XYZ channels
+	using the paper configuration $K=100$, degree-2 splines, second-order difference
+	penalties, 7-day blocking, and coarse-graining to $N_{c}=8192$ frequencies before
+	excising $\pm 1$ mHz around the three transfer-function nulls at 0.030, 0.060, and
+	0.090 Hz. After excision, inference is performed on 5679 retained coarse-frequency
+	bins for each duration. Figure~\ref{fig:lisa_xyz} compares the 30-, 90-, and
+	365-day posterior spectral matrices, while Figure~\ref{fig:lisa_xyz_residuals}
+	shows the corresponding residuals relative to the injected truth.
+
+	Matrix RIAE decreases from 0.0216 (30 days) to 0.0134 (90 days) and 0.0085
+	(365 days), and the residual plots in Figure~\ref{fig:lisa_xyz_residuals} are
+	consistent with this trend. Coverage is similar for the 30- and 90-day runs
+	(0.840 and 0.859 respectively), while the 365-day run is clearly suspicious:
+	although its point estimate is the most accurate by RIAE, it has only 0.497
+	coverage and very poor convergence diagnostics, with median ESS 200.8 and
+	$\hat{R}_{\max}=6.96$.
+
+	\begin{table*}[t]
+		\centering
+		\caption{LISA XYZ paper runs for the shared configuration $K=100$, $d=2$,
+		uniform knots, $N_{c}=8192$, 7-day blocks, and null-band excision. Coverage is
+		the fraction of (frequency, matrix element) pairs for which the true value lies
+		inside the pointwise 90\% credible interval.}
+		\label{tab:lisa_results}
+		\begin{NiceTabular}{lcccccc}
+			\toprule
+			{Duration} & {$N_{b}$} & {Matrix RIAE} & {Coverage} & {Coherence RIAE} & {ESS (median)} & {$\hat{R}_{\max}$} \\
+			\midrule
+			30 days  & 4  & 0.0216 & 0.840 & 0.0380 & 4869.7 & 1.149 \\
+			90 days  & 13 & 0.0134 & 0.859 & 0.0245 & 3839.8 & 1.195 \\
+			365 days & 52 & 0.0085 & 0.497 & 0.0561 & 200.8  & 6.962 \\
+			\bottomrule
+		\end{NiceTabular}
+	\end{table*}
 
 	\section{Discussion}
 
