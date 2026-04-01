@@ -34,7 +34,6 @@
 	\usepackage{siunitx}
 	\usepackage[commandnameprefix=ifneeded]{changes}
 \definechangesauthor[name={Avi}, color=blue]{AV}
-\newcommand{\mhadded}[1]{{\color{blue}#1}}% math-mode highlight for added content
 
 \input{custom_commands}
 
@@ -154,7 +153,6 @@
 	We divide the time series into $N_{b}$ equal-sized blocks
 	$\Z=(\Z^{(1)},\ldots,\Z^{(N_{b})})^{\intercal}$ with each block a $p$-dimensional
 	time series each of length $L_{b}=n/N_{b}$ \added[id=AV]{and duration $T_b=L_b\Delta_t=T/N_b$}.
-	\avi{Throughout this section I replaced $T\to T_b$ and $N\to N_l$ in the blocked likelihood equations. Reason: the DFT $\d^{(i)}$ is computed per block of length $L_b$, not over the full series of length $n$. With our DFT convention ($\Delta_t\sum$), the covariance of $\d^{(i)}$ is $T_b\,\S(f_k)$, not $T\,\S(f_k)$, and the product runs over $N_l=L_b/2$ block frequencies, not $N=n/2$. The previous equations incorrectly used full-series quantities where block quantities belong.}
 	The discrete Fourier transform of each
 	block is denoted by $\d^{(i)}$, $i=1,\ldots,N_{b}$. Assuming stationarity of the
 	time series and independence among different blocks, the overall blocked
@@ -165,13 +163,13 @@
 	\end{equation}
 	Applying the trace rotation rule $\tr(ABC)=\tr(BCA)=\tr(CAB)$ to the exponent, $\mathcal{L}(\d^{(i)}|\S)$ simplifies as
 	\begin{eqnarray*}
-		&\propto & \prod_{k=1}^{N_l} \left|\S(f_k)\right|^{-N_b} \exp\left(- \mhadded{\frac{1}{T_b}}\sum_{i=1}^{N_b}
+		&\propto & \prod_{k=1}^{N_l} \left|\S(f_k)\right|^{-N_b} \exp\left(- \frac{1}{T_b}\sum_{i=1}^{N_b}
 		\tr\left[\d^{(i)}(f_k)^* \S(f_k)^{-1} \d^{(i)}(f_k)\right]\right)\\ &\propto &
-		\prod_{k=1}^{N_l} \left|\S(f_k)\right|^{-N_b} \exp\left(- \mhadded{\frac{1}{T_b}}\tr\left[ \S(f_k)^{-1}
+		\prod_{k=1}^{N_l} \left|\S(f_k)\right|^{-N_b} \exp\left(- \frac{1}{T_b}\tr\left[ \S(f_k)^{-1}
 		\sum_{i=1}^{N_b} \underbrace{\d^{(i)}(f_k)\d^{(i)}(f_k)^*}_{\I^{(i)}(f_k)} \right]\right)\\
-		&\propto & \prod_{k=1}^{N_l} \left|\S(f_k)\right|^{-N_b} \exp\left(- \mhadded{\frac{1}{T_b}}\tr\left[
+		&\propto & \prod_{k=1}^{N_l} \left|\S(f_k)\right|^{-N_b} \exp\left(- \frac{1}{T_b}\tr\left[
 		\S(f_k)^{-1} N_b\bar{\I}(f_k)\right]\right)\\ &\propto & \prod_{k=1}^{N_l} \left|\S(f_k)\right|^{-N_b}
-		\exp\left(- \mhadded{\frac{1}{T_b}}\tr\left[ \S(f_k)^{-1} \Y(f_k)\right]\right)
+		\exp\left(- \frac{1}{T_b}\tr\left[ \S(f_k)^{-1} \Y(f_k)\right]\right)
 	\end{eqnarray*}
 	where $\displaystyle \bar{\I}(f)=\frac{1}{N_{b}}\sum_{i=1}^{N_b}\I^{(i)}(f)$ is
 	the block-averaged periodogram (or Welch estimate of the spectral density with
@@ -185,7 +183,7 @@
 	of freedom. This is consistent with the independent $d$-dimensional complex Wishart
 	distribution with one degree of freedom for each individual periodogram, i.e.,
 	\[
-		\I^{(i)}(f_{k})\sim{\cal CW}_{d}(\mhadded{T_b}\S(f_{k}),1),
+		\I^{(i)}(f_{k})\sim{\cal CW}_{d}(T_b\S(f_{k}),1),
 		\qquad
 		\added[id=AV]{\Y(f_k)\sim{\cal CW}_{d}(T_b\S(f_{k}),N_b).}
 		\]
@@ -195,8 +193,8 @@
 	the likelihood function can be expressed as
 	\begin{eqnarray}
 		\label{eq:log-like} &\propto & \prod_{k=1}^{N_l} \left|\S(f_k)\right|^{-N_b}
-		\exp\left(- \mhadded{\frac{1}{T_b}}\tr\left[ \S(f_k)^{-1} \Y(f_k)\right]\right)\\ &\propto & \prod_{k=1}^{N_l}
-		\left|\S(f_k)\right|^{-N_b} \exp\left(- \mhadded{\frac{1}{T_b}}\sum_{\nu=1}^p\u_\nu^{(k)*}\S(f_k)^{-1}\u_\nu^{(k)}\right)
+		\exp\left(- \frac{1}{T_b}\tr\left[ \S(f_k)^{-1} \Y(f_k)\right]\right)\\ &\propto & \prod_{k=1}^{N_l}
+		\left|\S(f_k)\right|^{-N_b} \exp\left(- \frac{1}{T_b}\sum_{\nu=1}^p\u_\nu^{(k)*}\S(f_k)^{-1}\u_\nu^{(k)}\right)
 		% &\propto &  \prod_{k=1}^{N_l} \left|\S(f_k)\right|^{-N_b} \prod_{\nu=1}^p %\exp\left(-\u_\nu^{(k)*}\S(f_k)^{-1}\u_\nu^{(k)}\right)
 	\end{eqnarray}
 	To further set notation, let $\U^{(k)}=\left(u_{j\nu}^{(k)}\right)$ denote the $p
@@ -231,7 +229,7 @@
 	where
 	\begin{align}
 		\mathcal{L}_{j}( & \u_{(j)},\u_{(<j)}|\btheta_{j},\bdelta_{j}) \propto \nonumber                                                                                                                                         \\
-		                 & \prod_{k=1}^{\mhadded{N_l}}\delta_{jk}^{-2N _b}\exp \left(\frac{-\sum_{\nu=1}^{p}\left|u_{j\nu}^{(k)}-\sum_{l=1}^{j-1}\theta_{jl}^{(k)}u_{l\nu}^{(k)}\right|^{2}}{\mhadded{T_b}\delta_{jk}^{2}}\right) \label{eq:likelihoodj}
+		                 & \prod_{k=1}^{N_l}\delta_{jk}^{-2N _b}\exp \left(\frac{-\sum_{\nu=1}^{p}\left|u_{j\nu}^{(k)}-\sum_{l=1}^{j-1}\theta_{jl}^{(k)}u_{l\nu}^{(k)}\right|^{2}}{T_b\delta_{jk}^{2}}\right) \label{eq:likelihoodj}
 	\end{align}%
 	and $\u_{(<j)}=\left(\u_{(1)},\ldots,\u_{(j-1)}\right)$ for $j>1$ (and the
 	empty vector for $j=1$),
@@ -249,15 +247,15 @@
 	the total parameter vector:
 	\begin{align}
 		\mathcal{L}_{1}( & \u_{(1)}|\bdelta_{1}) \propto \nonumber                                                                                                              \\
-		                 & \prod_{k=1}^{\mhadded{N_l}}\delta_{1k}^{-2N_b}\exp \left(\frac{-\sum_{\nu=1}^{p}\left|u_{1\nu}^{(k)}\right|^{2}}{\mhadded{T_b}\delta_{1k}^{2}}\right) \label{eq:likelihood1}
+		                 & \prod_{k=1}^{N_l}\delta_{1k}^{-2N_b}\exp \left(\frac{-\sum_{\nu=1}^{p}\left|u_{1\nu}^{(k)}\right|^{2}}{T_b\delta_{1k}^{2}}\right) \label{eq:likelihood1}
 	\end{align}%
 	\begin{align}
 		\mathcal{L}_{2}( & \u_{(1)},\u_{(2)}|\btheta_{2},\bdelta_{2}) \propto \nonumber                                                                                                                         \\
-		                 & \prod_{k=1}^{\mhadded{N_l}}\delta_{2k}^{-2N_b}\exp \left(\frac{-\sum_{\nu=1}^{p}\left|u_{2\nu}^{(k)}-\theta_{21}^{(k)}u_{1\nu}^{(k)}\right|^{2}}{\mhadded{T_b}\delta_{2k}^{2}}\right) \label{eq:likelihood2}
+		                 & \prod_{k=1}^{N_l}\delta_{2k}^{-2N_b}\exp \left(\frac{-\sum_{\nu=1}^{p}\left|u_{2\nu}^{(k)}-\theta_{21}^{(k)}u_{1\nu}^{(k)}\right|^{2}}{T_b\delta_{2k}^{2}}\right) \label{eq:likelihood2}
 	\end{align}%
 	\begin{align}
 		\mathcal{L}_{3}( & \u_{(1)},\u_{(2)},\u_{(3)}|\btheta_{3},\bdelta_{3}) \propto \nonumber                                                                                                                                                \\
-		                 & \prod_{k=1}^{\mhadded{N_l}}\delta_{3k}^{-2N_b}\exp \left(\frac{-\sum_{\nu=1}^{p}\left|u_{3\nu}^{(k)}-\theta_{31}^{(k)}u_{1\nu}^{(k)}-\theta_{32}^{(k)}u_{2\nu}^{(k)}\right|^{2}}{\mhadded{T_b}\delta_{3k}^{2}}\right) \label{eq:likelihood3}
+		                 & \prod_{k=1}^{N_l}\delta_{3k}^{-2N_b}\exp \left(\frac{-\sum_{\nu=1}^{p}\left|u_{3\nu}^{(k)}-\theta_{31}^{(k)}u_{1\nu}^{(k)}-\theta_{32}^{(k)}u_{2\nu}^{(k)}\right|^{2}}{T_b\delta_{3k}^{2}}\right) \label{eq:likelihood3}
 	\end{align}%
 	Note that a factorised likelihood does not in general imply a factorised
 	posterior. Here, however, the posterior also factorises because we place independent
@@ -284,16 +282,27 @@
 	of each individual $\Y(f_{k}), k=1,\ldots,N_{l}$, we use
 	$\Y_{h}^{*}=\sum_{f\in J_h}\Y(f)$, for $h=1,\ldots, N_{c}$. As the $\Y(f)$ are
 	asymptotically independent and complex Wishart distributed, i.e., $\Y(f)\sim{\cal CW}
-	(\mhadded{T_b}\S(f), N_{b})$, the distribution of $\Y_{h}$ can be approximated by
-	${\cal CW}(\mhadded{T_b}\S(\bar{f}_{h}), N_{b} N_{h})$, under the assumption that $\S(f)$ is
+	(T_b\S(f), N_{b})$, the distribution of $\Y_{h}$ can be approximated by
+	${\cal CW}(T_b\S(\bar{f}_{h}), N_{b} N_{h})$, under the assumption that $\S(f)$ is
 	approximately constant over $J_{h}$.\avi{verify: sum of CW with different scale matrices is not CW — check against Quentin JCAP}
+
+	From blocks $(i)$, to block-averaged frequency matrices $(\Y(f_k))$, to coarse bins $(\Y_h^*)$, with effective d.o.f. $(N_b N_h)$.
+
+	\begin{table*}[t]
+		\centering
+		\caption{Schematic of the blocked and coarse-grained likelihood construction.
+		$L_b=n/N_b$ is the block length, $T_b=L_b\Delta_t$ the block duration,
+		$N_l=L_b/2$ the number of positive block frequencies, and $N_h$ the number of
+		frequencies per coarse bin.}
+		\label{tab:blocked_coarse_schematic}
+		\input{Likelihood/blocking_coarsegrain_panel}
+	\end{table*}
+
 	It is therefore important to choose intervals that do not span peaks or abrupt spectral changes. Then the likelihood in equation (\ref{eq:log-like}) can be approximated
 	by
 	\begin{eqnarray}
 		\label{eq:log-like} &\propto & \prod_{h=1}^{N_c} \left|\S(\bar{f}_h)\right|^{-N_b N_h}
-		\exp\left(- \mhadded{\frac{1}{T_b}}\tr\left[ \S(\bar{f}_h)^{-1} \Y_h^{*}\right]\right)\\
-		% &\propto &   \prod_{k=1}^{N_l} \left|\S(f_k)\right|^{-N_b} \exp\left(- %\sum_{\nu=1}^p\u_\nu^{(k)*}\S(f_k)^{-1}\u_\nu^{(k)}\right)
-		&\propto & \prod_{h=1}^{N_c} \left|\S(\bar{f}_h)\right|^{-N_b N_h} \exp\left(- \mhadded{\frac{1}{T_b}}\sum_{\nu=1}^p\u_\nu^{(h)*}\S(\bar{f}_h)^{-1}\u_\nu^{(h)}\right)
+		\exp\left(- \frac{1}{T_b}\tr\left[ \S(\bar{f}_h)^{-1} \Y_h^{*}\right]\right)
 	\end{eqnarray}
 	where we use the eigendecomposition of $\Y_{h}^{*}=\sum_{\nu=1}^{p} \lambda^{(h)}
 	_{\nu} \v^{(h)}_{\nu}\v^{(h)*}_{\nu}=\sum_{\nu=1}^{p} \u^{(h)}_{\nu}\u^{(h)*}_{\nu}$
@@ -386,7 +395,7 @@
 	and the 90\% credible intervals demonstrate appropriate uncertainty quantification
 	across all spectral components.
 
-	Following Liu et at, we simulate 500 independent realisations of a bivariate
+	Following Liu et al., we simulate 500 independent realisations of a bivariate
 	time series from a vector autoregressive model of order 2, VAR(2), using three different
 	sample sizes $n=256,512,1024$ (refer to \citet[Section~4.2,][]{Liu2023} for the
 	definitions of the VAR(2) models). The spectral densities are estimated using
@@ -394,9 +403,27 @@
 	($d=3$) for each spectral component. We validate the multivariate P-spline method
 	using synthetic data from Vector Autoregressive (VAR) processes with known theoretical
 	spectral properties. The theoretical spectral density matrix provides exact
-	ground truth for comparison.
+	ground truth for comparison. To benchmark against existing Bayesian multivariate
+	spectral estimators, we compare to the variational Bayes (VB) and variational
+	nonparametric correction (VNPC) methods of \citet{Liu2023} using the same
+	$L_{2}$ error criterion.
 
-	To summarise spectral estimation accuracy across frequencies, we report the relative
+	Table~\ref{tab:var2_l2_results} summarises the $L_{2}$ errors across the 500
+	independent realisations. The multivariate P-spline estimator is competitive
+	with both comparators at every sample size and attains the lowest mean error in
+	all three settings. The mean $L_{2}$ error decreases from $0.095$ at $n=256$ to
+	$0.072$ at $n=512$ and $0.055$ at $n=1024$, compared with $0.121$, $0.091$, and
+	$0.066$ for VB and $0.129$, $0.103$, and $0.082$ for VNPC. This is the main
+	message we want from the bivariate benchmark: the proposed Log-P-spline method
+	achieves accuracy of the same order as established alternatives, while in these
+	simulations being modestly more accurate on average.
+
+	% Auto-generated from scripts/2D/var2_L2_errors_VI_VNPC_P_SPLINE.xlsx via
+	% scripts/2D/var2_l2_summary.py.
+	\input{scripts/2D/var2_l2_table.tex}
+
+	To summarise spectral estimation accuracy across frequencies in the remaining
+	simulation studies, we report the relative
 	integrated absolute error (RIAE)
 	\begin{equation}
 		\operatorname{RIAE}= \frac{\int \! \left\lVert \widehat{S}(f) - S(f) \right\rVert_{F}
@@ -405,57 +432,9 @@
 	where $\lVert \cdot \rVert_{F}$ denotes the Frobenius norm. The integrals are
 	evaluated numerically using Simpson's rule on the discrete frequency grid
 	shared by the theoretical spectrum $S(f)$ and the estimator $\widehat{S}(f)$.
-
-	\begin{figure}
-		\centering
-		\includegraphics[width=1\linewidth]{figures/riae_vs_K.pdf}
-		\caption{Relative integrated absolute error (RIAE) versus spline basis size
-		$K$ for fixed sample size $n$. Accuracy improves rapidly with $K$ until a broad
-		plateau where results are insensitive to further increases in basis resolution.
-		\avi{todo: use some other symbol for number of knots, k is for number of basis}}
-		\label{fig:riae_vs_k}
-	\end{figure}
-	\begin{figure}
-		\centering
-		\includegraphics[width=1\linewidth]{figures/riae_vs_N.pdf}
-		\caption{Relative integrated absolute error (RIAE) versus sample size $n$
-		for fixed basis size $K$. Error decreases approximately as $n^{-1/2}$,
-		consistent with variance-dominated behaviour under the Whittle likelihood. \avi{todo: lowercase n for length of timeseries}}
-		\label{fig:riae_vs_n}
-	\end{figure}
-
-	Figures~\ref{fig:riae_vs_k} and \ref{fig:riae_vs_n} display how estimation accuracy,
-	measured by RIAE, depends on the spline basis size $K$ and the sample size $n$.
-	For fixed $n$, RIAE versus $K$ exhibits the expected bias--variance trade-off: when
-	$K$ is too small the basis underfits and RIAE is elevated due to bias;
-	increasing $K$ initially reduces RIAE and then produces a broad plateau where
-	results are relatively insensitive to $K$; for very large $K$, a mild uptick
-	can appear at smaller $n$ due to increased variance. The roughness penalty keeps
-	variance in check, which explains the wide region of insensitivity to $K$. For fixed
-	$K$ and increasing $n$ (Figure~\ref{fig:riae_vs_n}), RIAE decreases
-	monotonically, with a slope on a log--log scale broadly consistent with
-	variance-dominated $n^{-1/2}$ behaviour. This scaling matches the intuition from
-	Whittle-likelihood-based estimators with shrinkage: more data reduces sampling
-	variability while the penalty controls effective complexity. Together, these
-	results indicate that accuracy improves predictably with $n$, and the method is
-	robust to the choice of $K$ across a wide range, provided $K$ is large enough
-	to avoid underfitting.
-
-	\begin{figure}
-		\centering
-		\includegraphics[width=1\linewidth]{figures/runtime_vs_K.pdf}
-		\caption{Wall-clock runtime versus spline basis size $K$ (fixed $n$ and $p$).}
-		\label{fig:runtime_vs_k}
-	\end{figure}
-	Figure~\ref{fig:runtime_vs_k} characterises computational cost as the basis
-	size $K$ varies while holding the length of the timeseries $n$ fixed. Runtime grows
-	approximately linearly in $K$, consistent with the dominant operations in our
-	JAX implementation, which are matrix-vector multiplies with banded structure and
-	penalty evaluations that scale as $O(nK)$. Note there may be constant
-	overheads due to data transfer, and the first invocation includes one-off JIT compilation
-	time. In practice, this predictable scaling allows one to choose $K$ based on accuracy
-	considerations (cf. Figure~\ref{fig:riae_vs_k}) knowing that wall-clock cost
-	will increase nearly proportionally.
+	Additional bivariate sensitivity analyses for RIAE versus basis size, RIAE
+	versus sample size, and runtime versus basis size are deferred to
+	Appendix~\ref{app:var2_appendix}.
 
 	\subsection{Simulation study: 3D VAR(2)}
 	\label{subsec:sim_3d_var2}
@@ -645,7 +624,62 @@
 
 	\appendix
 
-	\input{appdx}
+	\section{Additional bivariate VAR(2) sensitivity analyses}
+	\label{app:var2_appendix}
+
+	\begin{figure}
+		\centering
+		\includegraphics[width=1\linewidth]{figures/riae_vs_K.pdf}
+		\caption{Relative integrated absolute error (RIAE) versus spline basis size
+		$K$ for fixed sample size $n$. Accuracy improves rapidly with $K$ until a broad
+		plateau where results are insensitive to further increases in basis resolution.
+		\avi{todo: use some other symbol for number of knots, k is for number of basis}}
+		\label{fig:riae_vs_k}
+	\end{figure}
+	\begin{figure}
+		\centering
+		\includegraphics[width=1\linewidth]{figures/riae_vs_N.pdf}
+		\caption{Relative integrated absolute error (RIAE) versus sample size $n$
+		for fixed basis size $K$. Error decreases approximately as $n^{-1/2}$,
+		consistent with variance-dominated behaviour under the Whittle likelihood. \avi{todo: lowercase n for length of timeseries}}
+		\label{fig:riae_vs_n}
+	\end{figure}
+
+	Figures~\ref{fig:riae_vs_k} and \ref{fig:riae_vs_n} display how estimation
+	accuracy, measured by RIAE, depends on the spline basis size $K$ and the sample
+	size $n$. For fixed $n$, RIAE versus $K$ exhibits the expected
+	bias--variance trade-off: when $K$ is too small the basis underfits and RIAE is
+	elevated due to bias; increasing $K$ initially reduces RIAE and then produces a
+	broad plateau where results are relatively insensitive to $K$; for very large
+	$K$, a mild uptick can appear at smaller $n$ due to increased variance. The
+	roughness penalty keeps variance in check, which explains the wide region of
+	insensitivity to $K$. For fixed $K$ and increasing $n$
+	(Figure~\ref{fig:riae_vs_n}), RIAE decreases monotonically, with a slope on a
+	log--log scale broadly consistent with variance-dominated $n^{-1/2}$
+	behaviour. This scaling matches the intuition from Whittle-likelihood-based
+	estimators with shrinkage: more data reduces sampling variability while the
+	penalty controls effective complexity. Together, these results indicate that
+	accuracy improves predictably with $n$, and the method is robust to the choice
+	of $K$ across a wide range, provided $K$ is large enough to avoid underfitting.
+
+	\begin{figure}
+		\centering
+		\includegraphics[width=1\linewidth]{figures/runtime_vs_K.pdf}
+		\caption{Wall-clock runtime versus spline basis size $K$ (fixed $n$ and $p$).}
+		\label{fig:runtime_vs_k}
+	\end{figure}
+	Figure~\ref{fig:runtime_vs_k} characterises computational cost as the basis
+	size $K$ varies while holding the length of the timeseries $n$ fixed. Runtime
+	grows approximately linearly in $K$, consistent with the dominant operations in
+	our JAX implementation, which are matrix-vector multiplies with banded
+	structure and penalty evaluations that scale as $O(nK)$. Note there may be
+	constant overheads due to data transfer, and the first invocation includes
+	one-off JIT compilation time. In practice, this predictable scaling allows one
+	to choose $K$ based on accuracy considerations (cf.
+	Figure~\ref{fig:riae_vs_k}) knowing that wall-clock cost will increase nearly
+	proportionally.
+
+	% \input{appdx}
 
 	\bibliography{apssamp}% Produces the bibliography via BibTeX.
 \end{document}

@@ -1,0 +1,38 @@
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{@{}p{3.2cm}c p{3.6cm}c p{3.8cm}c p{4.2cm}@{}}
+\toprule
+\textcolor{blue!60!black}{\textbf{Data split}} &&
+\textcolor{teal!60!black}{\textbf{Whittle per block}} &&
+\textcolor{blue!60!black}{\textbf{Sum over blocks}} &&
+\textcolor{teal!60!black}{\textbf{Sum over frequency bins}} \\
+\midrule
+$\Z\mapsto \{\Z^{(i)}\}_{i=1}^{N_b}$,
+$L_b=n/N_b$, $T_b=L_b\Delta_t$ &
+$\Rightarrow$ &
+$\I^{(i)}(f_k)=\d^{(i)}(f_k)\d^{(i)}(f_k)^*$,
+$\I^{(i)}(f_k)\sim\mathcal{CW}_{p}(T_b\S(f_k),1)$ &
+$\Rightarrow$ &
+$\Y(f_k)=\sum_{i=1}^{N_b}\I^{(i)}(f_k)=N_b\,\bar\I(f_k)$,
+$\Y(f_k)\sim\mathcal{CW}_{p}(T_b\S(f_k),N_b)$ &
+$\Rightarrow$ &
+$\Y_h^{*}=\sum_{f_k\in J_h}\Y(f_k)$,
+$\Y_h^{*}\,\dot\sim\,\mathcal{CW}_{p}(T_b\S(\bar f_h),N_bN_h)$ \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.55em}
+\begin{align*}
+\mathcal{L}_{\mathrm{blocked}}(\S\mid\Y)
+&\propto \prod_{k=1}^{N_l}\left|\S(f_k)\right|^{-N_b}
+\exp\!\left(-\frac{1}{T_b}\,\mathrm{tr}\!\left[\S(f_k)^{-1}\Y(f_k)\right]\right), \\
+\mathcal{L}_{\mathrm{coarse}}(\S\mid\Y^{*})
+&\propto \prod_{h=1}^{N_c}\left|\S(\bar f_h)\right|^{-N_bN_h}
+\exp\!\left(-\frac{1}{T_b}\,\mathrm{tr}\!\left[\S(\bar f_h)^{-1}\Y_h^{*}\right]\right).
+\end{align*}
+
+\vspace{0.25em}
+{\footnotesize
+Symbols: $N_b$ blocks, $N_l$ block frequencies, $N_c$ coarse bins,
+$N_h=|J_h|$, $T_b=L_b\Delta_t$.}
