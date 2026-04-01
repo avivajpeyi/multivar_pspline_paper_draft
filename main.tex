@@ -21,14 +21,14 @@
 	%floatfix,
 ]{revtex4-2}
 
-	\usepackage{xcolor}
+	\usepackage[table]{xcolor}     % \rowcolor in tabulars (loads colortbl)
 	\usepackage{graphicx}% Include figure files
 	\graphicspath{{figures/}}
 	\usepackage{dcolumn}% Align table columns on decimal point
 	\usepackage{bm}% bold math
 	\usepackage{hyperref}% add hypertext capabilities
-	\usepackage{xcolor}
 	\usepackage{verbatim}
+	\usepackage{multirow}          % \multirow in tabulars
 	\usepackage{nicematrix}
 	\usepackage{booktabs}
 	\usepackage{siunitx}
@@ -107,6 +107,7 @@
 	\input{definitions_table}
 
 	\subsection{Likelihood}
+	Table~\ref{tab:definitions} summarises the notation used throughout this section.
 	Assume we are given a time series of gravitational wave observations of length $n$
 	from $p$ channels. To set notation, let $\Z=(\Z_{1},\ldots,\Z_{n})^{\intercal}\in
 	\mathbb{R}^{n\times p}$ be a $p$-dimensional stationary, mean-zero time series,
@@ -226,10 +227,16 @@
 	\begin{align}
 		\mathcal{L}(\d|\S) \propto \prod_{j=1}^{p}\mathcal{L}_{j}(\u_{(j)},\u_{(<j)}|{\btheta_j,\bdelta_j}), \label{eq:likelihood}
 	\end{align}
-	where
+	where, defining the $j$th Cholesky residual
+	\begin{equation}
+		r_{j\nu}^{(k)} := u_{j\nu}^{(k)} - \sum_{l=1}^{j-1}\theta_{jl}^{(k)}\,u_{l\nu}^{(k)},
+		\label{eq:residual}
+	\end{equation}
 	\begin{align}
-		\mathcal{L}_{j}( & \u_{(j)},\u_{(<j)}|\btheta_{j},\bdelta_{j}) \propto \nonumber                                                                                                                                         \\
-		                 & \prod_{k=1}^{N_l}\delta_{jk}^{-2N _b}\exp \left(\frac{-\sum_{\nu=1}^{p}\left|u_{j\nu}^{(k)}-\sum_{l=1}^{j-1}\theta_{jl}^{(k)}u_{l\nu}^{(k)}\right|^{2}}{T_b\delta_{jk}^{2}}\right) \label{eq:likelihoodj}
+		\mathcal{L}_{j}(\u_{(j)},\u_{(<j)}|\btheta_{j},\bdelta_{j})
+		&\propto \prod_{k=1}^{N_l} \delta_{jk}^{-2N_b}
+		  \exp\!\left(\frac{-\sum_{\nu=1}^{p}\left|r_{j\nu}^{(k)}\right|^{2}}
+		              {T_b\,\delta_{jk}^{2}}\right) \label{eq:likelihoodj}
 	\end{align}%
 	and $\u_{(<j)}=\left(\u_{(1)},\ldots,\u_{(j-1)}\right)$ for $j>1$ (and the
 	empty vector for $j=1$),
@@ -246,16 +253,22 @@
 	$\bdelta_{1}$, $(\bdelta_{2},\btheta_{2})$, and $(\bdelta_{3},\btheta_{3})$ of
 	the total parameter vector:
 	\begin{align}
-		\mathcal{L}_{1}( & \u_{(1)}|\bdelta_{1}) \propto \nonumber                                                                                                              \\
-		                 & \prod_{k=1}^{N_l}\delta_{1k}^{-2N_b}\exp \left(\frac{-\sum_{\nu=1}^{p}\left|u_{1\nu}^{(k)}\right|^{2}}{T_b\delta_{1k}^{2}}\right) \label{eq:likelihood1}
+		\mathcal{L}_{1}(\u_{(1)}|\bdelta_{1})
+		&\propto \prod_{k=1}^{N_l}\delta_{1k}^{-2N_b}
+		  \exp\!\left(\frac{-\sum_{\nu=1}^{p}\left|u_{1\nu}^{(k)}\right|^{2}}
+		              {T_b\,\delta_{1k}^{2}}\right) \label{eq:likelihood1}
 	\end{align}%
 	\begin{align}
-		\mathcal{L}_{2}( & \u_{(1)},\u_{(2)}|\btheta_{2},\bdelta_{2}) \propto \nonumber                                                                                                                         \\
-		                 & \prod_{k=1}^{N_l}\delta_{2k}^{-2N_b}\exp \left(\frac{-\sum_{\nu=1}^{p}\left|u_{2\nu}^{(k)}-\theta_{21}^{(k)}u_{1\nu}^{(k)}\right|^{2}}{T_b\delta_{2k}^{2}}\right) \label{eq:likelihood2}
+		\mathcal{L}_{2}(\u_{(1)},\u_{(2)}|\btheta_{2},\bdelta_{2})
+		&\propto \prod_{k=1}^{N_l}\delta_{2k}^{-2N_b}
+		  \exp\!\left(\frac{-\sum_{\nu=1}^{p}\left|r_{2\nu}^{(k)}\right|^{2}}
+		              {T_b\,\delta_{2k}^{2}}\right) \label{eq:likelihood2}
 	\end{align}%
 	\begin{align}
-		\mathcal{L}_{3}( & \u_{(1)},\u_{(2)},\u_{(3)}|\btheta_{3},\bdelta_{3}) \propto \nonumber                                                                                                                                                \\
-		                 & \prod_{k=1}^{N_l}\delta_{3k}^{-2N_b}\exp \left(\frac{-\sum_{\nu=1}^{p}\left|u_{3\nu}^{(k)}-\theta_{31}^{(k)}u_{1\nu}^{(k)}-\theta_{32}^{(k)}u_{2\nu}^{(k)}\right|^{2}}{T_b\delta_{3k}^{2}}\right) \label{eq:likelihood3}
+		\mathcal{L}_{3}(\u_{(1)},\u_{(2)},\u_{(3)}|\btheta_{3},\bdelta_{3})
+		&\propto \prod_{k=1}^{N_l}\delta_{3k}^{-2N_b}
+		  \exp\!\left(\frac{-\sum_{\nu=1}^{p}\left|r_{3\nu}^{(k)}\right|^{2}}
+		              {T_b\,\delta_{3k}^{2}}\right) \label{eq:likelihood3}
 	\end{align}%
 	Note that a factorised likelihood does not in general imply a factorised
 	posterior. Here, however, the posterior also factorises because we place independent
