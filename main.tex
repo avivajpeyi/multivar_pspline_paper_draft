@@ -175,7 +175,7 @@
 	the block-averaged periodogram (or Welch estimate of the spectral density with
 	non-overlapping blocks) of length $N_{l}=\frac{n}{2N_{b}}$ , $\I^{(i)}(f)=\d^{(i)}
 	(f)\d^{(i)}(f)^{*}$ the periodogram matrix of the $i$th block at frequency $f$,
-	and $\Y(f)=N_{b} \bar{\I}(f)$. Therefore, $\Y(f)$ has a $d$-dimensional complex
+	and $\Y(f)=N_{b} \bar{\I}(f)$. Therefore, $\Y(f)$ has a $p$-dimensional complex
 	Wishart distribution\footnote{ We use the notation $\A \sim{\cal CW}_{d}(\M,m)$
 	if the $d\times d$ Hermitian positive definite random matrix $\A$ has a complex
 	Wishart distribution with mean $m\M$ and $m$ degrees of freedom. Its density
@@ -495,7 +495,7 @@
 		is the fraction of (frequency, matrix element) pairs where the true spectral
 		value falls within the pointwise 90\% credible interval. RIAE is the
 		relative integrated absolute error (Frobenius norm). ESS is the median effective
-		sample size across parameters.}
+		sample size across parameters. \avi{Check Nl}}
 		\label{tab:3d_var2_results}
 		\begin{NiceTabular}{SSSSSSS}
 			\toprule {$n$} & {$N_{b}$} & {$N_{h}$} & {$N_{c}$} & {Coverage}      & {RIAE}          & {ESS (median)} \\
