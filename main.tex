@@ -21,7 +21,8 @@
 	%floatfix,
 ]{revtex4-2}
 
-	\usepackage[table]{xcolor}     % \rowcolor in tabulars (loads colortbl)
+	\usepackage{xcolor}
+	\usepackage{colortbl}          % \rowcolor in tabulars
 	\usepackage{graphicx}% Include figure files
 	\graphicspath{{figures/}}
 	\usepackage{dcolumn}% Align table columns on decimal point
@@ -30,6 +31,7 @@
 	\usepackage{verbatim}
 	\usepackage{multirow}          % \multirow in tabulars
 	\usepackage{nicematrix}
+	\usepackage{tikz}              % required for nicematrix \CodeBefore coloring
 	\usepackage{booktabs}
 	\usepackage{siunitx}
 	\usepackage[commandnameprefix=ifneeded]{changes}
@@ -69,38 +71,57 @@
 
 	\section{\label{sec:intro}Introduction}
 
-	LISA will provide three correlated data streams from time-delay interferometry
-	combinations. Accurate characterization of the noise spectral density matrix $\mathbf{S}
-	(f)$ is essential for optimal signal detection and parameter estimation in this
-	multivariate setting.
+	Accurate estimation of the noise power spectral density (PSD) is fundamental to
+	gravitational-wave (GW) data analysis. Whether for matched filtering, parameter
+	estimation, or searches for stochastic backgrounds, inference on GW signals requires
+	a reliable noise model across the full frequency band of the detector. For
+	ground-based detectors such as LIGO and Virgo, parametric noise models supplemented
+	by spline-based components --- most notably BayesLine \citeme{} --- have proven
+	effective. The upcoming space-based detector LISA \citeme{} poses a harder problem:
+	it produces three correlated time-delay interferometry (TDI) channels whose noise
+	properties vary smoothly but non-trivially across the millihertz band, and a
+	single-channel noise model cannot capture the cross-spectral correlations that
+	matter for joint inference.
 
-	LISA data exhibits several characteristics that challenge conventional spectral
-	estimation methods: frequency-dependent cross-correlations between channels, non-stationary
-	noise properties due to orbital motion, and overlapping astrophysical signals
-	across the millihertz band. Our approach addresses some of these challenges by modeling
-	the full spectral density matrix with smooth, frequency-varying P-splines
-	under a Cholesky parameterization that guarantees Hermitian positive
-	definiteness at every frequency. A hierarchical shrinkage prior provides automatic
-	regularization. Inference uses the Whittle likelihood with No-U-Turn sampling
-	(NUTS) for MCMC.
+	Flexible, nonparametric approaches to PSD estimation have a well-developed
+	statistical foundation. Penalised B-splines (P-splines) \citeme{} represent smooth
+	functions by a linear combination of B-spline basis functions with a roughness
+	penalty on adjacent coefficients. In a Bayesian formulation, this penalty
+	corresponds to a hierarchical Gaussian prior on the spline coefficients, with
+	the smoothing parameter integrated out. Applied to spectral density estimation
+	via the Whittle likelihood, this yields a smooth, data-driven estimator that
+	requires no parametric noise model. Univariate Bayesian P-spline PSD methods
+	have been applied to GW data analysis \citeme{}, and recent LISA-specific work
+	has introduced log-spline representations tuned to the steep low-frequency rise
+	of LISA noise \citeme{} and trans-dimensional spline sampling for stochastic
+	background searches \citeme{}.
 
-	The estimated spectral density matrices serve multiple roles in LISA data
-	analysis. They provide noise weighting for matched filtering operations and support
-	background characterization for targeted source analyses. The Bayesian
-	framework naturally propagates spectral uncertainties to downstream global-fit
-	parameter estimation procedures. Integration with LISA's global analysis pipeline
-	requires spectral estimates across multiple time scales, from hourly
-	monitoring to months-long campaigns. The computational footprint for this method
-	is predictable: for a fixed number of channels, the dominant operations scale approximately
-	as $O(nK)$ with the length of the timeseries $n$ and spline basis size $K$,
-	enabling routine re-estimation as data accumulates.
+	These univariate approaches model each channel independently. For LISA's three
+	TDI channels, the off-diagonal elements of the $3\times 3$ spectral density
+	matrix $\S(f)$ encode cross-correlations between channels and must be estimated
+	jointly. Failing to account for the full noise uncertainty in LISA's
+	cross-spectral densities can degrade sensitivity to stochastic GW backgrounds
+	by orders of magnitude \citeme{}. Modelling $\S(f)$ nonparametrically requires
+	a parametrisation that guarantees Hermitian positive definiteness at every
+	frequency and allows each element to vary smoothly across frequency.
 
-	Implementation of this methodology is expected to improve LISA's detection
-	sensitivity through more accurate noise characterization and reduce systematic
-	errors in parameter estimation by properly accounting for inter-channel
-	correlations. These improvements directly impact LISA's primary science objectives,
-	including the detection of massive black hole mergers, galactic binary systems,
-	and potential primordial gravitational wave backgrounds.
+	In this paper we extend the Bayesian P-spline PSD framework to the multivariate
+	setting. We parametrise $\S(f)^{-1}$ via its Cholesky decomposition
+	\citep{RosenOri2007Aeom, Hu2023}, which decomposes the estimation problem into
+	$p$ independent inference blocks that can be sampled in parallel. Each block's
+	log-diagonal and complex off-diagonal components are modelled with penalised
+	B-splines and a hierarchical smoothing prior. Inference proceeds via the blocked
+	Whittle likelihood with optional frequency-domain coarse-graining, using the
+	No-U-Turn Sampler \citep{hoffman2014_NUTS} initialised through stochastic
+	variational inference \citep{hoffman2013_SVI}. We validate the method on a
+	bivariate VAR(2) benchmark against \citet{Liu2023}, a three-channel VAR(2)
+	simulation, and a simulated LISA data segment.
+
+	The remainder of the paper is organised as follows.
+	Section~\ref{sec:psplines} develops the statistical model.
+	Section~\ref{sec:computation} describes the computational implementation.
+	Section~\ref{sec:application} presents the simulation studies.
+	Section~\ref{sec:discussion} discusses limitations and future directions.
 
 	\section{Multivariate P-splines}\label{sec:psplines}
 
@@ -261,13 +282,13 @@
 	\begin{align}
 		\mathcal{L}_{2}(\u_{(1)},\u_{(2)}|\btheta_{2},\bdelta_{2})
 		&\propto \prod_{k=1}^{N_l}\delta_{2k}^{-2N_b}
-		  \exp\!\left(\frac{-\sum_{\nu=1}^{p}\left|r_{2\nu}^{(k)}\right|^{2}}
+		  \exp\!\left(\frac{-\sum_{\nu=1}^{p}\left|u_{2\nu}^{(k)}-\theta_{21}^{(k)}u_{1\nu}^{(k)}\right|^{2}}
 		              {T_b\,\delta_{2k}^{2}}\right) \label{eq:likelihood2}
 	\end{align}%
 	\begin{align}
 		\mathcal{L}_{3}(\u_{(1)},\u_{(2)},\u_{(3)}|\btheta_{3},\bdelta_{3})
 		&\propto \prod_{k=1}^{N_l}\delta_{3k}^{-2N_b}
-		  \exp\!\left(\frac{-\sum_{\nu=1}^{p}\left|r_{3\nu}^{(k)}\right|^{2}}
+		  \exp\!\left(\frac{-\sum_{\nu=1}^{p}\left|u_{3\nu}^{(k)}-\theta_{31}^{(k)}u_{1\nu}^{(k)}-\theta_{32}^{(k)}u_{2\nu}^{(k)}\right|^{2}}
 		              {T_b\,\delta_{3k}^{2}}\right) \label{eq:likelihood3}
 	\end{align}%
 	Note that a factorised likelihood does not in general imply a factorised
@@ -314,7 +335,7 @@
 	It is therefore important to choose intervals that do not span peaks or abrupt spectral changes. Then the likelihood in equation (\ref{eq:log-like}) can be approximated
 	by
 	\begin{eqnarray}
-		\label{eq:log-like} &\propto & \prod_{h=1}^{N_c} \left|\S(\bar{f}_h)\right|^{-N_b N_h}
+		\label{eq:log-like-coarse} &\propto & \prod_{h=1}^{N_c} \left|\S(\bar{f}_h)\right|^{-N_b N_h}
 		\exp\left(- \frac{1}{T_b}\tr\left[ \S(\bar{f}_h)^{-1} \Y_h^{*}\right]\right)
 	\end{eqnarray}
 	where we use the eigendecomposition of $\Y_{h}^{*}=\sum_{\nu=1}^{p} \lambda^{(h)}

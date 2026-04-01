@@ -1,91 +1,74 @@
 % ---------------------------------------------------------------
 %  blocking_coarsegrain_panel.tex  –  input-able snippet
-%  Requires: booktabs, multirow, xcolor, amsmath
-%  Notation follows custom_commands.tex:
-%    \I = periodogram matrix   \Y = summed periodogram
-%    \S = spectral density     \d = DFT vector   \tr = trace
+%  Requires: nicematrix, tikz, booktabs, xcolor, amsmath
+%  Notation follows custom_commands.tex
 % ---------------------------------------------------------------
-\definecolor{colBlock}{RGB}{219,234,254}   % blue-50
-\definecolor{colSum}  {RGB}{220,252,231}   % green-50
+\definecolor{colBlock} {RGB}{219,234,254}  % blue-50
+\definecolor{colSum}   {RGB}{220,252,231}  % green-50
 \definecolor{colCoarse}{RGB}{254,243,199}  % amber-50
 
 \renewcommand{\arraystretch}{1.45}
 \setlength{\tabcolsep}{5pt}
 \small
-\begin{tabular}{@{} l l c c c c c c c @{}}
+
+\begin{NiceTabular}{@{} l l c c c c c c c @{}}
+\CodeBefore
+  \rowcolor{colBlock} {2-5}
+  \rowcolor{colSum}   {6-7}
+  \rowcolor{colCoarse}{8-11}
+\Body
 \toprule
 \textbf{Stage} & \textbf{Step} &
   $f_1$ & $\cdots$ & $f_{N_h}$ &
-  $\cdots$ &
-  $\cdots$ &
-  $\cdots$ &
-  $f_{N_l}$ \\
+  $\cdots$ & $\cdots$ & $\cdots$ & $f_{N_l}$ \\
 \midrule
-%=== STAGE 1: BLOCKING =========================================
-\rowcolor{colBlock}
-\multirow{3}{*}{\textbf{(i) Blocking}}
-  & Block $1$ &
-  $\I^{(1)}(f_1)$ & $\cdots$ & $\I^{(1)}(f_{N_h})$ &
-  $\cdots$ & $\cdots$ & $\cdots$ &
-  $\I^{(1)}(f_{N_l})$ \\
-\rowcolor{colBlock}
-  & $\vdots$ &
-  $\vdots$ & & $\vdots$ & & & & $\vdots$ \\
-\rowcolor{colBlock}
-  & Block $N_b$ &
-  $\I^{(N_b)}(f_1)$ & $\cdots$ & $\I^{(N_b)}(f_{N_h})$ &
-  $\cdots$ & $\cdots$ & $\cdots$ &
-  $\I^{(N_b)}(f_{N_l})$ \\
+%=== STAGE 1: BLOCKING ===
+\Block{4-1}{\textbf{(i) Blocking}}
+  & Block $1$
+  & $\I^{(1)}(f_1)$ & $\cdots$ & $\I^{(1)}(f_{N_h})$
+  & $\cdots$ & $\cdots$ & $\cdots$ & $\I^{(1)}(f_{N_l})$ \\
+  & $\vdots$
+  & $\vdots$ & & $\vdots$ & & & & $\vdots$ \\
+  & Block $N_b$
+  & $\I^{(N_b)}(f_1)$ & $\cdots$ & $\I^{(N_b)}(f_{N_h})$
+  & $\cdots$ & $\cdots$ & $\cdots$ & $\I^{(N_b)}(f_{N_l})$ \\
+  & \multicolumn{8}{l}{%
+      $\I^{(i)}(f_k) = \d^{(i)}(f_k)\d^{(i)}(f_k)^{*}
+       \;\sim\; \mathcal{CW}_{d}\!\left(T_b\S(f_k),\,1\right)$} \\
 \midrule
-%=== STAGE 2: SUM OVER BLOCKS ==================================
-\rowcolor{colSum}
-\multirow{2}{*}{\textbf{(ii) Averaging}}
-  & Sum $\Y(f_k)$ &
-  $\Y(f_1)$ & $\cdots$ & $\Y(f_{N_h})$ &
-  $\cdots$ & $\cdots$ & $\cdots$ &
-  $\Y(f_{N_l})$ \\
-\rowcolor{colSum}
-  & Degrees of freedom &
-  \multicolumn{7}{l}{%
-    $\Y(f_k)\sim\mathcal{CW}_{d}\!\left(T_b\S(f_k),\;N_b\right)$} \\
+%=== STAGE 2: AVERAGING ===
+\Block{2-1}{\textbf{(ii) Averaging}}
+  & Sum $\Y(f_k)$
+  & $\Y(f_1)$ & $\cdots$ & $\Y(f_{N_h})$
+  & $\cdots$ & $\cdots$ & $\cdots$ & $\Y(f_{N_l})$ \\
+  & \multicolumn{8}{l}{%
+      $\Y(f_k) = \textstyle\sum_{i=1}^{N_b}\I^{(i)}(f_k)
+       \;\sim\; \mathcal{CW}_{d}\!\left(T_b\S(f_k),\,N_b\right)$} \\
 \midrule
-%=== STAGE 3: COARSE-GRAINING ==================================
-\rowcolor{colCoarse}
-\multirow{3}{*}{\textbf{(iii) Coarse-graining}}
-  & \multicolumn{1}{l}{} &
-  \multicolumn{3}{c}{\upbracefill} &
-  $\cdots$ &
-  \multicolumn{1}{c}{\upbracefill} &
-  $\cdots$ &
-  \multicolumn{1}{c}{\upbracefill} \\[-3pt]
-\rowcolor{colCoarse}
-  & Bin $J_h$ &
-  \multicolumn{3}{c}{$J_1 = (f_1,\ldots,f_{N_h})$} &
-  $\cdots$ &
-  $J_h$ &
-  $\cdots$ &
-  $J_{N_c}$ \\
-\rowcolor{colCoarse}
-  & Bin sum $\Y_h^{*}$ &
-  \multicolumn{3}{c}{$\Y_1^{*}={\displaystyle\sum_{f_k\in J_1}}\Y(f_k)$} &
-  $\cdots$ &
-  $\Y_h^{*}$ &
-  $\cdots$ &
-  $\Y_{N_c}^{*}$ \\
-\rowcolor{colCoarse}
-  & Degrees of freedom &
-  \multicolumn{7}{l}{%
-    $\Y_h^{*}\;\dot{\sim}\;\mathcal{CW}_{d}\!\left(T_b\S(\bar{f}_h),\;N_b N_h\right),
-    \quad \bar{f}_h = \text{midpoint of } J_h$} \\
+%=== STAGE 3: COARSE-GRAINING ===
+\Block{4-1}{\textbf{(iii) Coarse-graining}}
+  & & \multicolumn{3}{c}{\upbracefill}
+    & $\cdots$
+    & \multicolumn{1}{c}{\upbracefill}
+    & $\cdots$
+    & \multicolumn{1}{c}{\upbracefill} \\[-3pt]
+  & Bin $J_h$
+  & \multicolumn{3}{c}{$J_1 = (f_1,\ldots,f_{N_h})$}
+  & $\cdots$ & $J_h$ & $\cdots$ & $J_{N_c}$ \\
+  & Bin sum $\Y_h^{*}$
+  & \multicolumn{3}{c}{$\Y_1^{*} = \displaystyle\sum_{f_k \in J_1}\Y(f_k)$}
+  & $\cdots$ & $\Y_h^{*}$ & $\cdots$ & $\Y_{N_c}^{*}$ \\
+  & \multicolumn{8}{l}{%
+      $\Y_h^{*} \;\dot{\sim}\; \mathcal{CW}_{d}\!\left(T_b\S(\bar{f}_h),\,N_b N_h\right),
+       \qquad \bar{f}_h = \text{midpoint of } J_h$} \\
 \bottomrule
-\end{tabular}
+\end{NiceTabular}
 
 \vspace{0.5em}
-
 {\footnotesize
 \textbf{Notation:}
-$\I^{(i)}(f_k)=\d^{(i)}(f_k)\d^{(i)}(f_k)^{*}$ is the periodogram of block $i$,\;
-$\Y(f_k)=\sum_{i=1}^{N_b}\I^{(i)}(f_k)=N_b\bar{\I}(f_k)$,\;
-$L_b=n/N_b$ block length,\; $T_b=L_b\Delta_t$ block duration,\;
-$N_l=L_b/2$ block frequencies,\; $N_h=|J_h|$ frequencies per coarse bin.%
+$\I^{(i)}(f_k)=\d^{(i)}(f_k)\d^{(i)}(f_k)^{*}$ is the periodogram of block $i$;\;
+$\Y(f_k)=\sum_{i=1}^{N_b}\I^{(i)}(f_k)=N_b\bar{\I}(f_k)$;\;
+$L_b=n/N_b$ block length;\; $T_b=L_b\Delta_t$ block duration;\;
+$N_l=L_b/2$ block frequencies;\; $N_h=|J_h|$ frequencies per coarse bin.%
 }

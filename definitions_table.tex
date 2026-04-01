@@ -1,7 +1,7 @@
 \begin{table*}[t]
     \centering
-    \small
-    \renewcommand{\arraystretch}{1.15}
+    \footnotesize
+    \renewcommand{\arraystretch}{1.1}
     \begin{tabular}{p{0.17\textwidth} p{0.77\textwidth}}
         \toprule
         \textbf{Symbol} & \textbf{Meaning} \\
@@ -20,9 +20,9 @@
         $N_b$         & Number of non-overlapping time blocks. \\
         $L_b$         & Samples per block, $L_b = n/N_b$. \\
         $T_b$         & Block duration, $T_b = L_b\Delta_t = T/N_b$. \\
-        $N_l$         & Positive-frequency count on the fine (per-block) grid, $N_l = L_b/2$. \\
-        $N_c$         & Number of coarse-grain frequency bins. \\
-        $N_h$         & Frequencies aggregated into each coarse bin, $|J_h|$. \\
+        $N_l$         & Positive-frequency count on the fine (per-block) grid, $N_l = L_b/2$. This is the number of frequencies analysed when \emph{no} coarse-graining is applied. \\
+        $N_c$         & Number of coarse-grain bins; the number of frequencies analysed after coarse-graining, $N_c = N_l / N_h$. \\
+        $N_h$         & Number of fine-grid frequencies aggregated into each coarse bin, $N_h = |J_h|$; so $N_c \times N_h = N_l$. \\
         $J_h$         & $h$th coarse-grain bin: a consecutive subset of fine-grid frequencies. \\
         $\bar{f}_h$   & Midpoint frequency of bin $J_h$. \\
         \multicolumn{2}{@{}l}{\textit{Spectral density}} \\[-1pt]\cmidrule{1-2}
@@ -36,25 +36,21 @@
         $\bar{\I}(f_k)$ & Block-averaged periodogram, $\bar{\I}(f_k)=\frac{1}{N_b}\sum_{i=1}^{N_b}\I^{(i)}(f_k)$. \\
         $\Y(f_k)$     & Summed periodogram / Wishart statistic, $\Y(f_k)=N_b\bar{\I}(f_k)\sim\mathcal{CW}_p(T_b\S(f_k),N_b)$. \\
         $\Y_h^{*}$    & Coarse-grained statistic for bin $J_h$: $\Y_h^*=\sum_{f_k\in J_h}\Y(f_k)\,\dot{\sim}\,\mathcal{CW}_p(T_b\S(\bar{f}_h),N_bN_h)$. \\
-        $\lambda_\nu^{(k)}$ & $\nu$th eigenvalue of $\Y(f_k)$; used to define scaled eigenvectors $\u_\nu^{(k)}$. \\
-        $\v_\nu^{(k)}$      & $\nu$th unit eigenvector of $\Y(f_k)$, so $\Y(f_k)=\sum_\nu\lambda_\nu^{(k)}\v_\nu^{(k)}\v_\nu^{(k)*}$. \\
+        $\lambda_\nu^{(k)}$, $\v_\nu^{(k)}$ & $\nu$th eigenvalue and unit eigenvector of $\Y(f_k)$, so $\Y(f_k)=\sum_\nu\lambda_\nu^{(k)}\v_\nu^{(k)}\v_\nu^{(k)*}$. \\
         $\u_\nu^{(k)}$      & Scaled eigenvector, $\u_\nu^{(k)}=\sqrt{\lambda_\nu^{(k)}}\,\v_\nu^{(k)}$, so $\Y(f_k)=\sum_\nu\u_\nu^{(k)}\u_\nu^{(k)*}$. \\
         $\U^{(k)}$    & $p\times p$ matrix with columns $\u_\nu^{(k)}$; rows indexed as $\u_{(j)}^{(k)}$. \\
         \multicolumn{2}{@{}l}{\textit{Cholesky parametrisation}} \\[-1pt]\cmidrule{1-2}
-        $\mathbf{T}_k$ & Unit lower-triangular matrix in the Cholesky factor: $\S(f_k)^{-1}=\mathbf{T}_k^*\mathbf{D}_k^{-1}\mathbf{T}_k$. \\
-        $\mathbf{D}_k$ & Diagonal matrix with positive entries $\delta_{1k}^2,\ldots,\delta_{pk}^2$. \\
+        $\mathbf{T}_k$, $\mathbf{D}_k$ & Cholesky factors in $\S(f_k)^{-1}=\mathbf{T}_k^*\mathbf{D}_k^{-1}\mathbf{T}_k$: $\mathbf{T}_k$ is unit lower-triangular; $\mathbf{D}_k$ is diagonal with entries $\delta_{1k}^2,\ldots,\delta_{pk}^2$. \\
         $\theta_{jl}^{(k)}$ & Complex-valued $(j,l)$ off-diagonal element of $\mathbf{T}_k$ (for $j>l$), at frequency $f_k$. \\
         $\delta_{jk}^2$     & $j$th diagonal element of $\mathbf{D}_k$ at frequency $f_k$; controls the $j$th partial variance. \\
-        $\btheta_j$   & Vector of all $\theta_{jl}^{(k)}$ for component $j$, across frequencies and $l<j$. \\
-        $\bdelta_j$   & Vector of all $\delta_{jk}$ for component $j$, across frequencies $k=1,\ldots,N_l$. \\
+        $\btheta_j$, $\bdelta_j$ & Parameter vectors for component $j$: $\btheta_j$ collects all $\theta_{jl}^{(k)}$ (for $l<j$, across frequencies); $\bdelta_j$ collects all $\delta_{jk}$ (across $k=1,\ldots,N_l$). \\
         $r_{j\nu}^{(k)}$ & Cholesky residual for component $j$: $r_{j\nu}^{(k)} := u_{j\nu}^{(k)} - \sum_{l=1}^{j-1}\theta_{jl}^{(k)}u_{l\nu}^{(k)}$. \\
         \multicolumn{2}{@{}l}{\textit{P-spline model}} \\[-1pt]\cmidrule{1-2}
         $K$           & Number of B-spline basis functions (basis size); note $K$ is a model hyperparameter, distinct from the frequency index $k$. \\
         $B_m(f_k)$   & $m$th B-spline basis function evaluated at $f_k$, $m=1,\ldots,K$. \\
         $M_j$, $M_{jl}$ & Number of basis functions used for the $j$th diagonal ($M_j$) and $(j,l)$ off-diagonal ($M_{jl}$) components. \\
-        $\bold{w}_j^{(\delta)}$ & Spline coefficients for $\log\delta_{jk}^2$; $\log\delta_{jk}^2 = \sum_m B_m(f_k)\,w_{j,m}^{(\delta)}$. \\
-        $\bold{w}_{jl}^{(\Re)}$, $\bold{w}_{jl}^{(\Im)}$ & Spline coefficients for the real and imaginary parts of $\theta_{jl}(f_k)$. \\
-        $\bold{P}_j$  & Penalty matrix for component $j$: $[\bold{P}_j]_{lm}=\int_0^1 B_l''(t)\,B_m''(t)\,\mathrm{d}t$. \\
+        $\mathbf{w}_j^{(\delta)}$, $\mathbf{w}_{jl}^{(\Re)}$, $\mathbf{w}_{jl}^{(\Im)}$ & Spline coefficient vectors for $\log\delta_{jk}^2$, $\Re[\theta_{jl}(f_k)]$, and $\Im[\theta_{jl}(f_k)]$ respectively; e.g.\ $\log\delta_{jk}^2 = \sum_m B_m(f_k)\,w_{j,m}^{(\delta)}$. \\
+        $\mathbf{P}_j$  & Penalty matrix for component $j$: $[\mathbf{P}_j]_{lm}=\int_0^1 B_l''(t)\,B_m''(t)\,\mathrm{d}t$. \\
         $\phi_j$      & Smoothing precision hyperparameter for component $j$; controls strength of the spline penalty. \\
         \bottomrule
     \end{tabular}
