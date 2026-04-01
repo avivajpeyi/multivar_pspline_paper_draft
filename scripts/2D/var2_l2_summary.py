@@ -169,9 +169,9 @@ def render_latex_table(summary: dict[str, object]) -> str:
         lines.append(
             "        "
             f"{n_value} & "
-            f"{row['p_spline']['mean']:.3f} \\pm {row['p_spline']['std']:.3f} & "
-            f"{row['VB']['mean']:.3f} \\pm {row['VB']['std']:.3f} & "
-            f"{row['VNPC']['mean']:.3f} \\pm {row['VNPC']['std']:.3f} \\\\"
+            f"${row['p_spline']['mean']:.3f} \\pm {row['p_spline']['std']:.3f}$ & "
+            f"${row['VB']['mean']:.3f} \\pm {row['VB']['std']:.3f}$ & "
+            f"${row['VNPC']['mean']:.3f} \\pm {row['VNPC']['std']:.3f}$ \\\\"
         )
     lines.extend(
         [
