@@ -1,59 +1,52 @@
 \begin{table*}[t]
     \centering
     \footnotesize
-    \renewcommand{\arraystretch}{1.1}
-    \begin{tabular}{p{0.17\textwidth} p{0.77\textwidth}}
+    \renewcommand{\arraystretch}{1.15}
+    % Section-header macro: small vertical air above + italic group label,
+    % no horizontal rule (cleaner than \cmidrule which created a busy look).
+    \newcommand{\groupheader}[1]{%
+        \noalign{\vspace{4pt}}%
+        \multicolumn{2}{@{}l}{\textit{#1}} \\[1pt]
+    }
+    \begin{tabular}{p{0.16\textwidth} p{0.78\textwidth}}
         \toprule
         \textbf{Symbol} & \textbf{Meaning} \\
         \midrule
-        \multicolumn{2}{@{}l}{\textit{Time series \& sampling}} \\[-1pt]\cmidrule{1-2}
-        $T$           & Total observation duration. \\
-        $\Delta_t$    & Sampling interval; $\Delta_t = 1/f_s$. \\
-        $f_s$         & Sampling frequency. \\
-        $f_{Ny}$      & Nyquist frequency, $f_{Ny} = f_s/2$. \\
-        $n$           & Number of time samples per channel, $n = T/\Delta_t$. \\
-        $p$           & Number of channels. \\
-        $\Delta_f$    & Frequency resolution, $\Delta_f = 1/T$. \\
-        $f_k$         & $k$th discrete Fourier frequency, $f_k = k\Delta_f = k/T$. \\
-        $N$           & Number of positive Fourier frequencies: $N=n/2$ ($n$ even) or $(n-1)/2$ ($n$ odd). \\
-        \multicolumn{2}{@{}l}{\textit{Blocking \& coarse-graining}} \\[-1pt]\cmidrule{1-2}
-        $N_b$         & Number of non-overlapping time blocks. \\
-        $L_b$         & Samples per block, $L_b = n/N_b$. \\
-        $T_b$         & Block duration, $T_b = L_b\Delta_t = T/N_b$. \\
-        $N_l$         & Positive-frequency count on the fine (per-block) grid, $N_l = L_b/2$. This is the number of frequencies analysed when \emph{no} coarse-graining is applied. \\
-        $N_c$         & Number of coarse-grain bins; the number of frequencies analysed after coarse-graining, $N_c = N_l / N_h$. \\
-        $N_h$         & Number of fine-grid frequencies aggregated into each coarse bin, $N_h = |J_h|$; so $N_c \times N_h = N_l$. \\
-        $J_h$         & $h$th coarse-grain bin: a consecutive subset of fine-grid frequencies. \\
-        $\bar{f}_h$   & Midpoint frequency of bin $J_h$. \\
-        \multicolumn{2}{@{}l}{\textit{Spectral density}} \\[-1pt]\cmidrule{1-2}
-        $\Z$          & Observed $p$-channel time series, $\Z=(\Z_1,\ldots,\Z_n)^\intercal\in\mathbb{R}^{n\times p}$. \\
-        $\d(f_k)$     & DFT vector at $f_k$; $\d(f_k)=(d_1(f_k),\ldots,d_p(f_k))^\intercal\in\mathbb{C}^p$. \\
-        $\Gamma(h)$   & Autocovariance matrix at lag $h$, $\Gamma(h)=(\gamma_{lm}(h))=\mathbb{E}(\Z_t\Z_{t+h}^\intercal)$. \\
-        $\gamma_{lm}(h)$ & $(l,m)$ entry of $\Gamma(h)$: cross-covariance between channels $l$ and $m$ at lag $h$. \\
-        $\S(f_k)$     & $p\times p$ Hermitian positive-definite spectral density matrix at $f_k$; Fourier transform of $\Gamma(h)$. \\
-        \multicolumn{2}{@{}l}{\textit{Periodogram \& Wishart statistics}} \\[-1pt]\cmidrule{1-2}
-        $\I^{(i)}(f_k)$ & Periodogram matrix of block $i$: $\I^{(i)}(f_k)=\d^{(i)}(f_k)\d^{(i)}(f_k)^*\sim\mathcal{CW}_p(T_b\S(f_k),1)$. \\
-        $\bar{\I}(f_k)$ & Block-averaged periodogram, $\bar{\I}(f_k)=\frac{1}{N_b}\sum_{i=1}^{N_b}\I^{(i)}(f_k)$. \\
-        $\Y(f_k)$     & Summed periodogram / Wishart statistic, $\Y(f_k)=N_b\bar{\I}(f_k)\sim\mathcal{CW}_p(T_b\S(f_k),N_b)$. \\
-        $\Y_h^{*}$    & Coarse-grained statistic for bin $J_h$: $\Y_h^*=\sum_{f_k\in J_h}\Y(f_k)\,\dot{\sim}\,\mathcal{CW}_p(T_b\S(\bar{f}_h),N_bN_h)$. \\
-        $\lambda_\nu^{(k)}$, $\v_\nu^{(k)}$ & $\nu$th eigenvalue and unit eigenvector of $\Y(f_k)$, so $\Y(f_k)=\sum_\nu\lambda_\nu^{(k)}\v_\nu^{(k)}\v_\nu^{(k)*}$. \\
-        $\u_\nu^{(k)}$      & Scaled eigenvector, $\u_\nu^{(k)}=\sqrt{\lambda_\nu^{(k)}}\,\v_\nu^{(k)}$, so $\Y(f_k)=\sum_\nu\u_\nu^{(k)}\u_\nu^{(k)*}$. \\
-        $\U^{(k)}$    & $p\times p$ matrix with columns $\u_\nu^{(k)}$; rows indexed as $\u_{(j)}^{(k)}$. \\
-        \multicolumn{2}{@{}l}{\textit{Cholesky parametrisation}} \\[-1pt]\cmidrule{1-2}
-        $\mathbf{T}_k$, $\mathbf{D}_k$ & Cholesky factors in $\S(f_k)^{-1}=\mathbf{T}_k^*\mathbf{D}_k^{-1}\mathbf{T}_k$: $\mathbf{T}_k$ is unit lower-triangular; $\mathbf{D}_k$ is diagonal with entries $\delta_{1k}^2,\ldots,\delta_{pk}^2$. \\
-        $\theta_{jl}^{(k)}$ & Complex-valued $(j,l)$ off-diagonal element of $\mathbf{T}_k$ (for $j>l$), at frequency $f_k$. \\
-        $\delta_{jk}^2$     & $j$th diagonal element of $\mathbf{D}_k$ at frequency $f_k$; controls the $j$th partial variance. \\
-        $\btheta_j$, $\bdelta_j$ & Parameter vectors for component $j$: $\btheta_j$ collects all $\theta_{jl}^{(k)}$ (for $l<j$, across frequencies); $\bdelta_j$ collects all $\delta_{jk}$ (across $k=1,\ldots,N_l$). \\
-        $r_{j\nu}^{(k)}$ & Cholesky residual for component $j$: $r_{j\nu}^{(k)} := u_{j\nu}^{(k)} - \sum_{l=1}^{j-1}\theta_{jl}^{(k)}u_{l\nu}^{(k)}$. \\
-        \multicolumn{2}{@{}l}{\textit{P-spline model}} \\[-1pt]\cmidrule{1-2}
-        $K$           & Number of B-spline basis functions (basis size); note $K$ is a model hyperparameter, distinct from the frequency index $k$. \\
-        $B_m(f_k)$   & $m$th B-spline basis function evaluated at $f_k$, $m=1,\ldots,K$. \\
-        $M_j$, $M_{jl}$ & Number of basis functions used for the $j$th diagonal ($M_j$) and $(j,l)$ off-diagonal ($M_{jl}$) components. \\
-        $\mathbf{w}_j^{(\delta)}$, $\mathbf{w}_{jl}^{(\Re)}$, $\mathbf{w}_{jl}^{(\Im)}$ & Spline coefficient vectors for $\log\delta_{jk}^2$, $\Re[\theta_{jl}(f_k)]$, and $\Im[\theta_{jl}(f_k)]$ respectively; e.g.\ $\log\delta_{jk}^2 = \sum_m B_m(f_k)\,w_{j,m}^{(\delta)}$. \\
-        $\mathbf{P}_j$  & Penalty matrix for component $j$: $[\mathbf{P}_j]_{lm}=\int_0^1 B_l''(t)\,B_m''(t)\,\mathrm{d}t$. \\
-        $\phi_j$      & Smoothing precision hyperparameter for component $j$; controls strength of the spline penalty. \\
+        \groupheader{Time series \& sampling}
+        $T,\ \Delta_t,\ f_s$            & Total observation duration, sampling interval, sampling frequency; $T=n\Delta_t$, $\Delta_t=1/f_s$. \\
+        $f_{Ny}$                        & Nyquist frequency, $f_{Ny}=f_s/2$. \\
+        $n,\ p$                         & Number of time samples per channel, number of channels. \\
+        $\Delta_f,\ f_k$                & Frequency resolution $\Delta_f=1/T$; $k$th DFT frequency $f_k=k\Delta_f$. \\
+        $N$                             & Number of positive Fourier frequencies, $N=\lfloor n/2\rfloor$. \\
+        \groupheader{Blocking \& coarse-graining}
+        $N_b,\ T_b$                     & Number of non-overlapping time blocks; block duration $T_b=T/N_b$ ($n/N_b$ samples per block). \\
+        $N_h,\ J_h,\ \bar{f}_h$         & Number of fine frequencies aggregated per coarse bin; $J_h$ the $h$th bin (consecutive subset of fine frequencies), with midpoint $\bar f_h$. \\
+        $N_c$                           & Number of coarse-grain bins, $N_c=n/(2N_bN_h)$. \\
+        \groupheader{Spectral density}
+        $\Z$                            & Observed $p$-channel time series, $\Z\in\mathbb{R}^{n\times p}$. \\
+        $\d(f_k)$                       & DFT vector, $\d(f_k)\in\mathbb{C}^p$. \\
+        $\Gamma(h),\ \gamma_{lm}(h)$    & Autocovariance matrix at lag $h$ and its $(l,m)$ entry. \\
+        $\S(f_k)$                       & $p\times p$ Hermitian positive-definite spectral density matrix; Fourier transform of $\Gamma$. \\
+        \groupheader{Periodogram \& Wishart statistics}
+        $\I^{(i)}(f_k),\ \bar\I(f_k)$   & Block-$i$ periodogram, $\I^{(i)}=\d^{(i)}\d^{(i)*}\sim\mathcal{CW}_p(T_b\S,1)$; block-averaged periodogram $\bar\I=N_b^{-1}\sum_i\I^{(i)}$. \\
+        $\Y(f_k)$                       & Summed periodogram / Wishart statistic, $\Y=N_b\bar\I\sim\mathcal{CW}_p(T_b\S,N_b)$. \\
+        $\Y_h^{*}$                      & Coarse-grained statistic, $\Y_h^*=\sum_{f_k\in J_h}\Y(f_k)\,\dot\sim\,\mathcal{CW}_p(T_b\S(\bar f_h),N_bN_h)$. \\
+        $\lambda_\nu^{(k)},\ \v_\nu^{(k)},\ \u_\nu^{(k)}$
+                                        & $\nu$th eigenvalue/unit eigenvector of $\Y(f_k)$; scaled eigenvector $\u_\nu^{(k)}=\sqrt{\lambda_\nu^{(k)}}\,\v_\nu^{(k)}$. \\
+        \groupheader{Cholesky parametrisation}
+        $\mathbf{T}_k,\ \mathbf{D}_k$   & Factors in $\S(f_k)^{-1}=\mathbf{T}_k^*\mathbf{D}_k^{-1}\mathbf{T}_k$: $\mathbf{T}_k$ unit lower-triangular, $\mathbf{D}_k$ diagonal with entries $\delta_{1k}^2,\ldots,\delta_{pk}^2$. \\
+        $\theta_{jl}^{(k)},\ \delta_{jk}^2$
+                                        & Off-diagonal entry $(j,l)$ of $\mathbf{T}_k$ ($j>l$) and $j$th diagonal entry of $\mathbf{D}_k$. \\
+        $\btheta_j,\ \bdelta_j$         & Parameter vectors for channel $j$: collect $\theta_{jl}^{(k)}$ ($l<j$) and $\delta_{jk}$ across $k=1,\ldots,n/(2N_b)$. \\
+        \groupheader{P-spline model}
+        $K,\ B_m(f_k)$                  & Number of B-spline basis functions (model hyperparameter, distinct from frequency index $k$); $m$th basis evaluated at $f_k$. \\
+        $M_j,\ M_{jl}$                  & Basis sizes for the $j$th diagonal and $(j,l)$ off-diagonal components. \\
+        $\mathbf{w}_j^{(\delta)},\ \mathbf{w}_{jl}^{(\Re)},\ \mathbf{w}_{jl}^{(\Im)}$
+                                        & Spline coefficient vectors for $\log\delta_{jk}^2$, $\Re[\theta_{jl}]$, $\Im[\theta_{jl}]$. \\
+        $\mathbf{P}_j,\ \phi_j$         & Penalty matrix $[\mathbf{P}_j]_{lm}=\int_0^1 B_l''B_m''\,\mathrm{d}t$ and smoothing precision hyperparameter. \\
         \bottomrule
     \end{tabular}
-    \caption{Notation used throughout the paper. Symbols are grouped by the stage of the model they belong to.}
+    \caption{Notation used throughout the paper. Symbols are grouped by
+        the stage of the model they belong to.}
     \label{tab:definitions}
 \end{table*}

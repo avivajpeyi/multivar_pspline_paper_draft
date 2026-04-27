@@ -185,7 +185,10 @@ def _extract_group_quantiles(psd_group) -> dict[str, np.ndarray]:
     """Return freq and 5/50/95 quantiles from posterior_psd-like groups."""
     if psd_group is None:
         raise ValueError("PSD group is missing.")
-    if "psd_matrix_real" not in psd_group or "psd_matrix_imag" not in psd_group:
+    if (
+        "psd_matrix_real" not in psd_group
+        or "psd_matrix_imag" not in psd_group
+    ):
         raise ValueError(
             "PSD group must contain psd_matrix_real and psd_matrix_imag."
         )
@@ -220,10 +223,14 @@ def _interp_complex_matrix(
     source_values = np.asarray(source_values, dtype=np.complex128)
 
     if source_values.shape[0] != source_freq.size:
-        raise ValueError("source_values first dimension must match source_freq.")
+        raise ValueError(
+            "source_values first dimension must match source_freq."
+        )
 
     _, n_channels, _ = source_values.shape
-    out = np.empty((target_freq.size, n_channels, n_channels), dtype=np.complex128)
+    out = np.empty(
+        (target_freq.size, n_channels, n_channels), dtype=np.complex128
+    )
     for i in range(n_channels):
         for j in range(n_channels):
             out[:, i, j] = np.interp(
@@ -313,8 +320,12 @@ def _compute_ci_width_metrics_from_group(psd_group) -> dict[str, float]:
             dtype=np.float64,
         )
         if coherence.shape[0] >= 2:
-            coh_q05 = _extract_percentile_slice(coherence, coh_percentiles, 5.0)
-            coh_q95 = _extract_percentile_slice(coherence, coh_percentiles, 95.0)
+            coh_q05 = _extract_percentile_slice(
+                coherence, coh_percentiles, 5.0
+            )
+            coh_q95 = _extract_percentile_slice(
+                coherence, coh_percentiles, 95.0
+            )
             coh_width = np.maximum(coh_q95 - coh_q05, 0.0)
             coh_offdiag = coh_width[:, offdiag_mask]
             metrics["ciw_coh_offdiag_mean"] = float(np.mean(coh_offdiag))
@@ -368,7 +379,9 @@ def _build_metrics_summary(idata) -> dict[str, object]:
         "coarse_vi_success": _scalar_attr(attrs, "coarse_vi_success"),
         "coarse_vi_nfreq": _scalar_attr(attrs, "coarse_vi_nfreq"),
         "coarse_vi_full_nfreq": _scalar_attr(attrs, "coarse_vi_full_nfreq"),
-        "coarse_vi_target_nfreq": _scalar_attr(attrs, "coarse_vi_target_nfreq"),
+        "coarse_vi_target_nfreq": _scalar_attr(
+            attrs, "coarse_vi_target_nfreq"
+        ),
         **_compute_ci_width_metrics_from_group(posterior_group),
     }
     summary["vi"] = {
@@ -757,13 +770,18 @@ def run_analysis() -> None:
     vi_summary = _maybe_interp_summary(vi_summary, nuts_summary["freq"])
 
     periodogram = None
-    if hasattr(idata, "observed_data") and "periodogram" in idata.observed_data:
+    if (
+        hasattr(idata, "observed_data")
+        and "periodogram" in idata.observed_data
+    ):
         periodogram_da = idata.observed_data["periodogram"]
         periodogram = np.asarray(periodogram_da.values)
         if periodogram.shape[0] != nuts_summary["freq"].size:
             periodogram = _interp_complex_matrix(
                 nuts_summary["freq"],
-                np.asarray(periodogram_da.coords["freq"].values, dtype=np.float64),
+                np.asarray(
+                    periodogram_da.coords["freq"].values, dtype=np.float64
+                ),
                 periodogram,
             )
 

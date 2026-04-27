@@ -5,7 +5,6 @@ import json
 from pathlib import Path
 import warnings
 
-import arviz as az
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FuncFormatter, LogLocator, NullFormatter
 import numpy as np
@@ -38,7 +37,9 @@ def _calculate_true_var_psd_hz(
     freqs_hz = np.asarray(freqs_hz, dtype=np.float64)
     ar_order, n_channels, _ = var_coeffs.shape
     omega = 2.0 * np.pi * freqs_hz / float(fs)
-    psd = np.empty((freqs_hz.shape[0], n_channels, n_channels), dtype=np.complex128)
+    psd = np.empty(
+        (freqs_hz.shape[0], n_channels, n_channels), dtype=np.complex128
+    )
     ident = np.eye(n_channels, dtype=np.complex128)
 
     for idx, w in enumerate(omega):
@@ -57,7 +58,9 @@ def _calculate_true_var_psd_hz(
     return psd
 
 
-def _nearest_percentile(values: np.ndarray, percentiles: np.ndarray, q: float) -> np.ndarray:
+def _nearest_percentile(
+    values: np.ndarray, percentiles: np.ndarray, q: float
+) -> np.ndarray:
     idx = int(np.argmin(np.abs(percentiles - q)))
     return np.asarray(values[idx], dtype=np.float64)
 
@@ -74,9 +77,15 @@ def _resolve_default_idatas(repo_root: Path) -> list[Path]:
     candidates_cg_on_npz = sorted(
         base.glob("seed_*_*_cgNH*/posterior_ci_summary.npz")
     )
-    candidates_any_new_npz = sorted(base.glob("seed_*_*/posterior_ci_summary.npz"))
-    candidates_any_old_npz = sorted(base.glob("seed_*_*/compact_ci_curves.npz"))
-    candidates_cg_off_nc = sorted(base.glob("seed_*_*_cgOFF/inference_data.nc"))
+    candidates_any_new_npz = sorted(
+        base.glob("seed_*_*/posterior_ci_summary.npz")
+    )
+    candidates_any_old_npz = sorted(
+        base.glob("seed_*_*/compact_ci_curves.npz")
+    )
+    candidates_cg_off_nc = sorted(
+        base.glob("seed_*_*_cgOFF/inference_data.nc")
+    )
     candidates_cg_on_nc = sorted(base.glob("seed_*_*_cgNH*/inference_data.nc"))
 
     if candidates_overlay_npz:
@@ -232,9 +241,9 @@ def _load_summary_from_npz(npz_path: Path) -> dict:
                 ) + 1j * np.asarray(data["periodogram_imag"], dtype=np.float64)
             truth = None
             if "truth_real" in data and "truth_imag" in data:
-                truth = np.asarray(data["truth_real"], dtype=np.float64) + 1j * np.asarray(
-                    data["truth_imag"], dtype=np.float64
-                )
+                truth = np.asarray(
+                    data["truth_real"], dtype=np.float64
+                ) + 1j * np.asarray(data["truth_imag"], dtype=np.float64)
 
             metrics: dict[str, float] = {}
             metrics_path = npz_path.parent / "metrics_summary.json"
@@ -250,18 +259,42 @@ def _load_summary_from_npz(npz_path: Path) -> dict:
             return {
                 "kind": "vi_vs_nuts_overlay",
                 "freq": freq,
-                "nuts_q05_real": np.asarray(data["nuts_real_q05"], dtype=np.float64),
-                "nuts_q50_real": np.asarray(data["nuts_real_q50"], dtype=np.float64),
-                "nuts_q95_real": np.asarray(data["nuts_real_q95"], dtype=np.float64),
-                "nuts_q05_imag": np.asarray(data["nuts_imag_q05"], dtype=np.float64),
-                "nuts_q50_imag": np.asarray(data["nuts_imag_q50"], dtype=np.float64),
-                "nuts_q95_imag": np.asarray(data["nuts_imag_q95"], dtype=np.float64),
-                "vi_q05_real": np.asarray(data["vi_real_q05"], dtype=np.float64),
-                "vi_q50_real": np.asarray(data["vi_real_q50"], dtype=np.float64),
-                "vi_q95_real": np.asarray(data["vi_real_q95"], dtype=np.float64),
-                "vi_q05_imag": np.asarray(data["vi_imag_q05"], dtype=np.float64),
-                "vi_q50_imag": np.asarray(data["vi_imag_q50"], dtype=np.float64),
-                "vi_q95_imag": np.asarray(data["vi_imag_q95"], dtype=np.float64),
+                "nuts_q05_real": np.asarray(
+                    data["nuts_real_q05"], dtype=np.float64
+                ),
+                "nuts_q50_real": np.asarray(
+                    data["nuts_real_q50"], dtype=np.float64
+                ),
+                "nuts_q95_real": np.asarray(
+                    data["nuts_real_q95"], dtype=np.float64
+                ),
+                "nuts_q05_imag": np.asarray(
+                    data["nuts_imag_q05"], dtype=np.float64
+                ),
+                "nuts_q50_imag": np.asarray(
+                    data["nuts_imag_q50"], dtype=np.float64
+                ),
+                "nuts_q95_imag": np.asarray(
+                    data["nuts_imag_q95"], dtype=np.float64
+                ),
+                "vi_q05_real": np.asarray(
+                    data["vi_real_q05"], dtype=np.float64
+                ),
+                "vi_q50_real": np.asarray(
+                    data["vi_real_q50"], dtype=np.float64
+                ),
+                "vi_q95_real": np.asarray(
+                    data["vi_real_q95"], dtype=np.float64
+                ),
+                "vi_q05_imag": np.asarray(
+                    data["vi_imag_q05"], dtype=np.float64
+                ),
+                "vi_q50_imag": np.asarray(
+                    data["vi_imag_q50"], dtype=np.float64
+                ),
+                "vi_q95_imag": np.asarray(
+                    data["vi_imag_q95"], dtype=np.float64
+                ),
                 "periodogram": periodogram,
                 "truth": truth,
                 "metrics": metrics,
@@ -297,14 +330,14 @@ def _load_summary_from_npz(npz_path: Path) -> dict:
 
         periodogram = None
         if "periodogram_real" in data and "periodogram_imag" in data:
-            periodogram = np.asarray(data["periodogram_real"], dtype=np.float64) + 1j * np.asarray(
-                data["periodogram_imag"], dtype=np.float64
-            )
+            periodogram = np.asarray(
+                data["periodogram_real"], dtype=np.float64
+            ) + 1j * np.asarray(data["periodogram_imag"], dtype=np.float64)
         truth = None
         if "truth_real" in data and "truth_imag" in data:
-            truth = np.asarray(data["truth_real"], dtype=np.float64) + 1j * np.asarray(
-                data["truth_imag"], dtype=np.float64
-            )
+            truth = np.asarray(
+                data["truth_real"], dtype=np.float64
+            ) + 1j * np.asarray(data["truth_imag"], dtype=np.float64)
 
     metrics: dict[str, float] = {}
     metrics_path = npz_path.parent / "metrics_summary.json"
@@ -334,17 +367,27 @@ def _load_summary(idata_path: Path) -> dict:
     if idata_path.suffix.lower() == ".npz":
         return _load_summary_from_npz(idata_path)
 
+    import arviz as az  # lazy: only required for the .nc loader
+
     idata = az.from_netcdf(idata_path)
     if not hasattr(idata, "posterior_psd"):
         raise ValueError(f"{idata_path} has no posterior_psd group.")
     if "psd_matrix_real" not in idata.posterior_psd:
-        raise ValueError(f"{idata_path} posterior_psd has no psd_matrix_real variable.")
+        raise ValueError(
+            f"{idata_path} posterior_psd has no psd_matrix_real variable."
+        )
 
     psd_group = idata.posterior_psd
     freq = np.asarray(psd_group.coords["freq"].values, dtype=np.float64)
-    percentiles = np.asarray(psd_group.coords["percentile"].values, dtype=np.float64)
-    psd_real = np.asarray(psd_group["psd_matrix_real"].values, dtype=np.float64)
-    psd_imag = np.asarray(psd_group["psd_matrix_imag"].values, dtype=np.float64)
+    percentiles = np.asarray(
+        psd_group.coords["percentile"].values, dtype=np.float64
+    )
+    psd_real = np.asarray(
+        psd_group["psd_matrix_real"].values, dtype=np.float64
+    )
+    psd_imag = np.asarray(
+        psd_group["psd_matrix_imag"].values, dtype=np.float64
+    )
 
     attrs = getattr(idata, "attrs", {})
     metric_keys = (
@@ -380,46 +423,83 @@ def _load_summary(idata_path: Path) -> dict:
         "metrics": metrics,
     }
 
-    if hasattr(idata, "observed_data") and "periodogram" in idata.observed_data:
-        summary["periodogram"] = np.asarray(idata.observed_data["periodogram"].values)
+    if (
+        hasattr(idata, "observed_data")
+        and "periodogram" in idata.observed_data
+    ):
+        summary["periodogram"] = np.asarray(
+            idata.observed_data["periodogram"].values
+        )
 
     return summary
 
 
-def _plot_vi_vs_nuts_overlay(summary: dict, output_path: Path, xmax: float) -> None:
+def _plot_vi_vs_nuts_overlay(
+    summary: dict, output_path: Path, xmax: float
+) -> None:
+    # Match the LISA-plot style for visual consistency across the manuscript.
+    plt.rcParams.update(
+        {
+            "font.size": 11,
+            "axes.titlesize": 13,
+            "axes.labelsize": 12,
+            "legend.fontsize": 10,
+            "xtick.labelsize": 10,
+            "ytick.labelsize": 10,
+        }
+    )
+
     freq = np.asarray(summary["freq"], dtype=np.float64)
     x_mask = (freq >= float(np.min(freq))) & (freq <= float(xmax))
     if not np.any(x_mask):
         x_mask = np.ones_like(freq, dtype=bool)
 
     freq_plot = freq[x_mask]
-    truth_plot = None if summary.get("truth") is None else np.asarray(summary["truth"])[x_mask]
+    truth_plot = (
+        None
+        if summary.get("truth") is None
+        else np.asarray(summary["truth"])[x_mask]
+    )
     periodogram_plot = (
-        None if summary.get("periodogram") is None else np.asarray(summary["periodogram"])[x_mask]
+        None
+        if summary.get("periodogram") is None
+        else np.asarray(summary["periodogram"])[x_mask]
     )
 
     n_channels = summary["nuts_q50_real"].shape[1]
     fig, axes = plt.subplots(
         n_channels,
         n_channels,
-        figsize=(n_channels * 3.0, n_channels * 3.0),
+        figsize=(n_channels * 2.8, n_channels * 2.8),
         sharex=True,
         constrained_layout=False,
     )
     if n_channels == 1:
         axes = np.array([[axes]])
 
-    empirical_kw = {"color": "0.75", "linewidth": 0.8, "alpha": 0.8, "zorder": 1}
-    nuts_fill_kw = {"color": "tab:blue", "alpha": 0.20, "zorder": 2}
-    nuts_line_kw = {"color": "tab:blue", "linewidth": 1.8, "zorder": 4}
-    vi_fill_kw = {"color": "tab:orange", "alpha": 0.18, "zorder": 3}
+    # Periodogram styled to match the LISA-script "Welch reference" grey
+    # for a consistent palette across manuscript spectral-matrix figures.
+    empirical_kw = {
+        "color": "0.25",
+        "linewidth": 0.5,
+        "alpha": 0.35,
+        "zorder": 1,
+    }
+    nuts_fill_kw = {"color": "tab:blue", "alpha": 0.28, "zorder": 3}
+    nuts_line_kw = {"color": "tab:blue", "linewidth": 1.6, "zorder": 5}
+    vi_fill_kw = {"color": "tab:orange", "alpha": 0.22, "zorder": 4}
     vi_line_kw = {
         "color": "tab:orange",
-        "linewidth": 1.6,
+        "linewidth": 1.4,
         "linestyle": "--",
-        "zorder": 5,
+        "zorder": 6,
     }
-    truth_kw = {"color": "black", "linewidth": 1.2, "linestyle": ":", "zorder": 6}
+    truth_kw = {
+        "color": "black",
+        "linewidth": 1.1,
+        "linestyle": ":",
+        "zorder": 7,
+    }
 
     for i in range(n_channels):
         for j in range(n_channels):
@@ -484,13 +564,19 @@ def _plot_vi_vs_nuts_overlay(summary: dict, output_path: Path, xmax: float) -> N
                 vi_mid = summary["vi_q50_real"][x_mask, i, j]
                 vi_high = summary["vi_q95_real"][x_mask, i, j]
                 if periodogram_plot is not None:
-                    ax.plot(freq_plot, np.real(periodogram_plot[:, i, j]), **empirical_kw)
+                    ax.plot(
+                        freq_plot,
+                        np.real(periodogram_plot[:, i, j]),
+                        **empirical_kw,
+                    )
                 ax.fill_between(freq_plot, nuts_low, nuts_high, **nuts_fill_kw)
                 ax.plot(freq_plot, nuts_mid, **nuts_line_kw)
                 ax.fill_between(freq_plot, vi_low, vi_high, **vi_fill_kw)
                 ax.plot(freq_plot, vi_mid, **vi_line_kw)
                 if truth_plot is not None:
-                    ax.plot(freq_plot, np.real(truth_plot[:, i, j]), **truth_kw)
+                    ax.plot(
+                        freq_plot, np.real(truth_plot[:, i, j]), **truth_kw
+                    )
             else:
                 nuts_low = summary["nuts_q05_imag"][x_mask, i, j]
                 nuts_mid = summary["nuts_q50_imag"][x_mask, i, j]
@@ -499,69 +585,75 @@ def _plot_vi_vs_nuts_overlay(summary: dict, output_path: Path, xmax: float) -> N
                 vi_mid = summary["vi_q50_imag"][x_mask, i, j]
                 vi_high = summary["vi_q95_imag"][x_mask, i, j]
                 if periodogram_plot is not None:
-                    ax.plot(freq_plot, np.imag(periodogram_plot[:, i, j]), **empirical_kw)
+                    ax.plot(
+                        freq_plot,
+                        np.imag(periodogram_plot[:, i, j]),
+                        **empirical_kw,
+                    )
                 ax.fill_between(freq_plot, nuts_low, nuts_high, **nuts_fill_kw)
                 ax.plot(freq_plot, nuts_mid, **nuts_line_kw)
                 ax.fill_between(freq_plot, vi_low, vi_high, **vi_fill_kw)
                 ax.plot(freq_plot, vi_mid, **vi_line_kw)
                 if truth_plot is not None:
-                    ax.plot(freq_plot, np.imag(truth_plot[:, i, j]), **truth_kw)
+                    ax.plot(
+                        freq_plot, np.imag(truth_plot[:, i, j]), **truth_kw
+                    )
 
             if i == n_channels - 1:
-                ax.set_xlabel("Frequency (Hz)")
-            ax.set_xlim(float(freq_plot[0]), min(float(xmax), float(freq_plot[-1])))
-            ax.grid(alpha=0.2, linewidth=0.5)
-
-            if i == j:
-                panel_label = f"S{i + 1}{j + 1}"
-            elif i < j:
-                panel_label = f"Re[S{i + 1}{j + 1}]"
+                ax.set_xlabel("Frequency [Hz]")
             else:
-                panel_label = f"Im[S{i + 1}{j + 1}]"
+                ax.tick_params(labelbottom=False)
+            ax.set_xlim(
+                float(freq_plot[0]), min(float(xmax), float(freq_plot[-1]))
+            )
+            ax.grid(True, which="major", ls=":", alpha=0.35)
+            ax.grid(True, which="minor", ls=":", alpha=0.18)
+
+            # Math-style panel label, matching the LISA triangle plot.
+            if i == j:
+                panel_label = rf"$S_{{{i + 1}{j + 1}}}$"
+            elif i < j:
+                panel_label = rf"$\Re\{{S_{{{i + 1}{j + 1}}}\}}$"
+            else:
+                panel_label = rf"$\Im\{{S_{{{i + 1}{j + 1}}}\}}$"
             ax.text(
-                0.03,
-                0.96,
+                0.04,
+                0.93,
                 panel_label,
                 transform=ax.transAxes,
                 ha="left",
                 va="top",
-                fontsize=11,
-                fontweight="semibold",
-                bbox={"facecolor": "white", "edgecolor": "none", "alpha": 0.85, "pad": 1.5},
+                fontsize=15,
                 zorder=10,
             )
 
+            # Per-panel y-axis labels on the leftmost column only.
+            if j == 0:
+                if i == j:
+                    ax.set_ylabel(r"PSD [1/Hz]")
+                else:
+                    ax.set_ylabel(r"Cross-spectrum")
+
     handles, labels = axes[0, 0].get_legend_handles_labels()
     if handles:
-        axes[0, 0].legend(
+        # Figure-level legend in the upper-right corner outside the axes.
+        fig.legend(
             handles,
             labels,
             loc="upper right",
-            fontsize=9,
-            frameon=True,
-            framealpha=0.9,
+            bbox_to_anchor=(0.985, 0.985),
+            frameon=False,
+            ncol=1,
+            handlelength=2.2,
+            handletextpad=0.6,
         )
 
-    fig.subplots_adjust(
-        left=0.08,
-        right=0.98,
-        bottom=0.07,
-        top=0.98,
-        wspace=0.18,
-        hspace=0.12,
-    )
-    fig.text(
-        0.015,
-        0.5,
-        "Spectral density [1/Hz]",
-        rotation=90,
-        va="center",
-        ha="center",
-        fontsize=12,
-    )
-    fig.savefig(output_path, dpi=220, bbox_inches="tight")
+    fig.tight_layout(h_pad=0.55, w_pad=0.65, rect=(0.0, 0.0, 1.0, 0.94))
+    fig.savefig(output_path, dpi=300, bbox_inches="tight")
     if output_path.suffix.lower() == ".pdf":
-        fig.savefig(output_path.with_suffix(".png"), dpi=220, bbox_inches="tight")
+        fig.savefig(
+            output_path.with_suffix(".png"), dpi=220, bbox_inches="tight"
+        )
     plt.close(fig)
 
 
@@ -589,7 +681,10 @@ def main() -> int:
         s["source_path"] = str(p)
         summaries.append(s)
 
-    if len(summaries) == 1 and summaries[0].get("kind") == "vi_vs_nuts_overlay":
+    if (
+        len(summaries) == 1
+        and summaries[0].get("kind") == "vi_vs_nuts_overlay"
+    ):
         _plot_vi_vs_nuts_overlay(
             summaries[0],
             output_path=output_path,
@@ -609,7 +704,9 @@ def main() -> int:
     else:
         labels = list(args.labels)
         if len(labels) != len(idata_paths):
-            raise ValueError("Number of --labels must match number of --idata paths.")
+            raise ValueError(
+                "Number of --labels must match number of --idata paths."
+            )
 
     colors = ["tab:blue", "tab:orange", "tab:green", "tab:red"]
     fill_alphas = [0.4, 0.4, 0.4, 0.4]
@@ -618,9 +715,14 @@ def main() -> int:
     # Use first dataset for channel dimensions.
     first = summaries[0]
     n_channels = first["q50_real"].shape[1]
-    periodogram = next((s["periodogram"] for s in summaries if s["periodogram"] is not None), None)
+    periodogram = next(
+        (s["periodogram"] for s in summaries if s["periodogram"] is not None),
+        None,
+    )
 
-    truth_summary = next((s for s in summaries if s.get("truth") is not None), None)
+    truth_summary = next(
+        (s for s in summaries if s.get("truth") is not None), None
+    )
     if truth_summary is not None:
         freq_dense = truth_summary["freq"]
         true_psd_dense = truth_summary["truth"]
@@ -645,14 +747,29 @@ def main() -> int:
         )
 
         max_freq_available = max(float(np.max(s["freq"])) for s in summaries)
-        xmax = float(args.xmax) if args.xmax is not None else max_freq_available
+        xmax = (
+            float(args.xmax) if args.xmax is not None else max_freq_available
+        )
         xmax = min(xmax, max_freq_available)
         freq_dense = np.linspace(0.0, xmax, 1200)
         freq_dense = freq_dense[freq_dense > 0.0]
-        true_psd_dense = _calculate_true_var_psd_hz(freq_dense, var_coeffs, sigma, fs=1.0)
+        true_psd_dense = _calculate_true_var_psd_hz(
+            freq_dense, var_coeffs, sigma, fs=1.0
+        )
     else:
         true_psd_dense = None
         freq_dense = None
+
+    plt.rcParams.update(
+        {
+            "font.size": 11,
+            "axes.titlesize": 13,
+            "axes.labelsize": 12,
+            "legend.fontsize": 10,
+            "xtick.labelsize": 10,
+            "ytick.labelsize": 10,
+        }
+    )
 
     fig, axes = plt.subplots(
         n_channels,
@@ -706,20 +823,30 @@ def main() -> int:
         for i in range(n_channels):
             for j in range(n_channels):
                 if i <= j:
-                    re_obs_candidates.append(np.real(periodogram[:, i, j])[x_mask0])
+                    re_obs_candidates.append(
+                        np.real(periodogram[:, i, j])[x_mask0]
+                    )
                 else:
-                    im_obs_candidates.append(np.imag(periodogram[:, i, j])[x_mask0])
+                    im_obs_candidates.append(
+                        np.imag(periodogram[:, i, j])[x_mask0]
+                    )
 
     if true_psd_dense is not None:
         truth_mask = (freq_dense >= x_min) & (freq_dense <= x_max)
         for i in range(n_channels):
             for j in range(n_channels):
                 if i <= j:
-                    all_re_candidates.append(np.real(true_psd_dense[:, i, j])[truth_mask])
+                    all_re_candidates.append(
+                        np.real(true_psd_dense[:, i, j])[truth_mask]
+                    )
                 else:
-                    all_im_candidates.append(np.imag(true_psd_dense[:, i, j])[truth_mask])
+                    all_im_candidates.append(
+                        np.imag(true_psd_dense[:, i, j])[truth_mask]
+                    )
 
-    def _global_limits(candidates: list[np.ndarray], symmetric: bool) -> tuple[float, float]:
+    def _global_limits(
+        candidates: list[np.ndarray], symmetric: bool
+    ) -> tuple[float, float]:
         vals = np.concatenate([np.ravel(c) for c in candidates if c.size])
         vals = vals[np.isfinite(vals)]
         if vals.size == 0:
@@ -826,29 +953,52 @@ def main() -> int:
                 # )
 
             ax.set_xlim(x_min, x_max)
-            if i <= j:
+            if i == j:
+                # Log-y for diagonal PSDs; clamp floor to a small fraction
+                # of the running max so the dynamic range is preserved.
+                ax.set_yscale("log")
+                ax.yaxis.set_major_locator(
+                    LogLocator(base=10.0, subs=(1.0, 2.0, 5.0))
+                )
+                ax.yaxis.set_major_formatter(FuncFormatter(_plain_log_tick))
+                ax.yaxis.set_minor_formatter(NullFormatter())
+            elif i < j:
+                # Real cross-spectrum: data-driven symmetric-ish ylim.
                 ax.set_ylim(*re_ylim)
             else:
+                # Imag cross-spectrum: symmetric-ish ylim around zero.
                 ax.set_ylim(*im_ylim)
-                ax.axhline(0.0, color="0.35", lw=0.7, alpha=0.7, zorder=2)
-                ax.set_facecolor((0.96, 0.96, 0.96))
+                ax.axhline(0.0, color="0.5", lw=0.6, alpha=0.6, zorder=2)
 
-            panel_key = (i + 1, j + 1)
-            if panel_key in {(1, 1), (2, 2)}:
-                ax.set_ylim(0.0, 3.0)
-            elif panel_key in {(1, 3), (2, 3)}:
-                ax.set_ylim(-0.5, 1.0)
-            elif panel_key == (3, 3):
-                ax.set_ylim(0.0, 1.5)
-            elif panel_key in {(3, 1), (3, 2)}:
-                ax.set_ylim(-0.25, 0.5)
-
-            ax.grid(alpha=0.25, linewidth=0.5)
+            ax.grid(True, which="major", ls=":", alpha=0.35)
+            ax.grid(True, which="minor", ls=":", alpha=0.18)
             if i == n_channels - 1:
-                ax.set_xlabel("Frequency (Hz)")
+                ax.set_xlabel("Frequency [Hz]")
+            else:
+                ax.tick_params(labelbottom=False)
             if j == 0:
-                ax.set_ylabel(ylabel)
-            ax.set_title(f"({i+1},{j+1})", fontsize=9)
+                if i == j:
+                    ax.set_ylabel(r"PSD [1/Hz]")
+                else:
+                    ax.set_ylabel(r"Cross-spectrum")
+
+            # Math-style panel label
+            if i == j:
+                panel_label = rf"$S_{{{i + 1}{j + 1}}}$"
+            elif i < j:
+                panel_label = rf"$\Re\{{S_{{{i + 1}{j + 1}}}\}}$"
+            else:
+                panel_label = rf"$\Im\{{S_{{{i + 1}{j + 1}}}\}}$"
+            ax.text(
+                0.04,
+                0.93,
+                panel_label,
+                transform=ax.transAxes,
+                ha="left",
+                va="top",
+                fontsize=15,
+                zorder=10,
+            )
 
     handles, labels_out = axes[0, 0].get_legend_handles_labels()
     if handles:
@@ -865,7 +1015,9 @@ def main() -> int:
     # output_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output_path, dpi=220, bbox_inches="tight")
     if output_path.suffix.lower() == ".pdf":
-        fig.savefig(output_path.with_suffix(".png"), dpi=220, bbox_inches="tight")
+        fig.savefig(
+            output_path.with_suffix(".png"), dpi=220, bbox_inches="tight"
+        )
 
     print("Loaded input files:")
     for p in idata_paths:

@@ -8,7 +8,8 @@
 \newcommand{\pmr}[1]{\textcolor{blue}{[Patricio: #1]}}
 \newcommand{\jliu}[1]{\textcolor{blue}{[Jianan: #1]}}
 
-\newcommand{\citeme}{\textcolor{red}{[CITEME]}}
+% Optional argument hint: \citeme or \citeme[hint]
+\newcommand{\citeme}[1][]{\textcolor{red}{\textbf{[CITEME\ifx\\#1\\\else: #1\fi]}}}
 
 
 \newcommand{\vect}[1]{\boldsymbol{#1}}

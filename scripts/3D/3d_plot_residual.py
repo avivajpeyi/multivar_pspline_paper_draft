@@ -26,7 +26,9 @@ def _calculate_true_var_psd_hz(
     freqs_hz = np.asarray(freqs_hz, dtype=np.float64)
     ar_order, n_channels, _ = var_coeffs.shape
     omega = 2.0 * np.pi * freqs_hz / float(fs)
-    psd = np.empty((freqs_hz.shape[0], n_channels, n_channels), dtype=np.complex128)
+    psd = np.empty(
+        (freqs_hz.shape[0], n_channels, n_channels), dtype=np.complex128
+    )
     ident = np.eye(n_channels, dtype=np.complex128)
 
     for idx, w in enumerate(omega):
@@ -45,7 +47,9 @@ def _calculate_true_var_psd_hz(
     return psd
 
 
-def _nearest_percentile(values: np.ndarray, percentiles: np.ndarray, q: float) -> np.ndarray:
+def _nearest_percentile(
+    values: np.ndarray, percentiles: np.ndarray, q: float
+) -> np.ndarray:
     idx = int(np.argmin(np.abs(percentiles - q)))
     return np.asarray(values[idx], dtype=np.float64)
 
@@ -61,7 +65,9 @@ def _interp_complex_matrix_to_freq(
     source_matrix = np.asarray(source_matrix)
 
     if source_matrix.ndim != 3:
-        raise ValueError(f"Expected matrix with shape (F, C, C); got {source_matrix.shape}.")
+        raise ValueError(
+            f"Expected matrix with shape (F, C, C); got {source_matrix.shape}."
+        )
     if source_matrix.shape[0] != source_freq.size:
         raise ValueError(
             "Frequency and matrix length mismatch: "
@@ -100,9 +106,15 @@ def _resolve_default_idatas(repo_root: Path) -> list[Path]:
     candidates_cg_on_npz = sorted(
         base.glob("seed_*_*_cgNH*/posterior_ci_summary.npz")
     )
-    candidates_any_new_npz = sorted(base.glob("seed_*_*/posterior_ci_summary.npz"))
-    candidates_any_old_npz = sorted(base.glob("seed_*_*/compact_ci_curves.npz"))
-    candidates_cg_off_nc = sorted(base.glob("seed_*_*_cgOFF/inference_data.nc"))
+    candidates_any_new_npz = sorted(
+        base.glob("seed_*_*/posterior_ci_summary.npz")
+    )
+    candidates_any_old_npz = sorted(
+        base.glob("seed_*_*/compact_ci_curves.npz")
+    )
+    candidates_cg_off_nc = sorted(
+        base.glob("seed_*_*_cgOFF/inference_data.nc")
+    )
     candidates_cg_on_nc = sorted(base.glob("seed_*_*_cgNH*/inference_data.nc"))
 
     if candidates_cg_off_npz and candidates_cg_on_npz:
@@ -261,14 +273,14 @@ def _load_summary_from_npz(npz_path: Path) -> dict:
 
         periodogram = None
         if "periodogram_real" in data and "periodogram_imag" in data:
-            periodogram = np.asarray(data["periodogram_real"], dtype=np.float64) + 1j * np.asarray(
-                data["periodogram_imag"], dtype=np.float64
-            )
+            periodogram = np.asarray(
+                data["periodogram_real"], dtype=np.float64
+            ) + 1j * np.asarray(data["periodogram_imag"], dtype=np.float64)
         truth = None
         if "truth_real" in data and "truth_imag" in data:
-            truth = np.asarray(data["truth_real"], dtype=np.float64) + 1j * np.asarray(
-                data["truth_imag"], dtype=np.float64
-            )
+            truth = np.asarray(
+                data["truth_real"], dtype=np.float64
+            ) + 1j * np.asarray(data["truth_imag"], dtype=np.float64)
 
     metrics: dict[str, float] = {}
     metrics_path = npz_path.parent / "metrics_summary.json"
@@ -301,13 +313,21 @@ def _load_summary(idata_path: Path) -> dict:
     if not hasattr(idata, "posterior_psd"):
         raise ValueError(f"{idata_path} has no posterior_psd group.")
     if "psd_matrix_real" not in idata.posterior_psd:
-        raise ValueError(f"{idata_path} posterior_psd has no psd_matrix_real variable.")
+        raise ValueError(
+            f"{idata_path} posterior_psd has no psd_matrix_real variable."
+        )
 
     psd_group = idata.posterior_psd
     freq = np.asarray(psd_group.coords["freq"].values, dtype=np.float64)
-    percentiles = np.asarray(psd_group.coords["percentile"].values, dtype=np.float64)
-    psd_real = np.asarray(psd_group["psd_matrix_real"].values, dtype=np.float64)
-    psd_imag = np.asarray(psd_group["psd_matrix_imag"].values, dtype=np.float64)
+    percentiles = np.asarray(
+        psd_group.coords["percentile"].values, dtype=np.float64
+    )
+    psd_real = np.asarray(
+        psd_group["psd_matrix_real"].values, dtype=np.float64
+    )
+    psd_imag = np.asarray(
+        psd_group["psd_matrix_imag"].values, dtype=np.float64
+    )
 
     attrs = getattr(idata, "attrs", {})
     metric_keys = (
@@ -342,8 +362,13 @@ def _load_summary(idata_path: Path) -> dict:
         "metrics": metrics,
     }
 
-    if hasattr(idata, "observed_data") and "periodogram" in idata.observed_data:
-        summary["periodogram"] = np.asarray(idata.observed_data["periodogram"].values)
+    if (
+        hasattr(idata, "observed_data")
+        and "periodogram" in idata.observed_data
+    ):
+        summary["periodogram"] = np.asarray(
+            idata.observed_data["periodogram"].values
+        )
 
     return summary
 
@@ -380,7 +405,9 @@ def main() -> int:
     else:
         labels = list(args.labels)
         if len(labels) != len(idata_paths):
-            raise ValueError("Number of --labels must match number of --idata paths.")
+            raise ValueError(
+                "Number of --labels must match number of --idata paths."
+            )
 
     colors = ["tab:blue", "tab:orange", "tab:green", "tab:red"]
     fill_alphas = [0.4, 0.4, 0.4, 0.4]
@@ -389,7 +416,9 @@ def main() -> int:
     first = summaries[0]
     n_channels = first["q50_real"].shape[1]
 
-    truth_summary = next((s for s in summaries if s.get("truth") is not None), None)
+    truth_summary = next(
+        (s for s in summaries if s.get("truth") is not None), None
+    )
     if truth_summary is not None:
         freq_dense = truth_summary["freq"]
         true_psd_dense = truth_summary["truth"]
@@ -414,11 +443,15 @@ def main() -> int:
         )
 
         max_freq_available = max(float(np.max(s["freq"])) for s in summaries)
-        xmax = float(args.xmax) if args.xmax is not None else max_freq_available
+        xmax = (
+            float(args.xmax) if args.xmax is not None else max_freq_available
+        )
         xmax = min(xmax, max_freq_available)
         freq_dense = np.linspace(0.0, xmax, 1200)
         freq_dense = freq_dense[freq_dense > 0.0]
-        true_psd_dense = _calculate_true_var_psd_hz(freq_dense, var_coeffs, sigma, fs=1.0)
+        true_psd_dense = _calculate_true_var_psd_hz(
+            freq_dense, var_coeffs, sigma, fs=1.0
+        )
     else:
         true_psd_dense = None
         freq_dense = None
@@ -438,8 +471,12 @@ def main() -> int:
             truth = true_psd_dense
             truth_freq = freq_dense
 
-        if truth.shape[0] != freq.size or not np.array_equal(np.asarray(truth_freq), freq):
-            truth_on_freq = _interp_complex_matrix_to_freq(truth_freq, freq, truth)
+        if truth.shape[0] != freq.size or not np.array_equal(
+            np.asarray(truth_freq), freq
+        ):
+            truth_on_freq = _interp_complex_matrix_to_freq(
+                truth_freq, freq, truth
+            )
         else:
             truth_on_freq = np.asarray(truth, dtype=np.complex128)
 
@@ -499,7 +536,9 @@ def main() -> int:
                         ]
                     )
 
-    def _global_limits(candidates: list[np.ndarray], symmetric: bool) -> tuple[float, float]:
+    def _global_limits(
+        candidates: list[np.ndarray], symmetric: bool
+    ) -> tuple[float, float]:
         if not candidates:
             return (-1.0, 1.0) if symmetric else (0.0, 1.0)
         vals = np.concatenate([np.ravel(c) for c in candidates if c.size])
@@ -534,20 +573,26 @@ def main() -> int:
                 if i <= j:
                     lower = s["r05_real"][:, i, j]
                     upper = s["r95_real"][:, i, j]
-                    ylabel = r"$\Re\{S_{%d%d}(f)-S^{\mathrm{true}}_{%d%d}(f)\}$" % (
-                        i + 1,
-                        j + 1,
-                        i + 1,
-                        j + 1,
+                    ylabel = (
+                        r"$\Re\{S_{%d%d}(f)-S^{\mathrm{true}}_{%d%d}(f)\}$"
+                        % (
+                            i + 1,
+                            j + 1,
+                            i + 1,
+                            j + 1,
+                        )
                     )
                 else:
                     lower = s["r05_imag"][:, i, j]
                     upper = s["r95_imag"][:, i, j]
-                    ylabel = r"$\Im\{S_{%d%d}(f)-S^{\mathrm{true}}_{%d%d}(f)\}$" % (
-                        i + 1,
-                        j + 1,
-                        i + 1,
-                        j + 1,
+                    ylabel = (
+                        r"$\Im\{S_{%d%d}(f)-S^{\mathrm{true}}_{%d%d}(f)\}$"
+                        % (
+                            i + 1,
+                            j + 1,
+                            i + 1,
+                            j + 1,
+                        )
                     )
 
                 ax.fill_between(
@@ -558,7 +603,9 @@ def main() -> int:
                     alpha=fill_alphas[k % len(fill_alphas)],
                     linewidth=0.0,
                     zorder=3 + k,
-                    label=f"{label} residual 90% CI" if (i == 0 and j == 0) else None,
+                    label=f"{label} residual 90% CI"
+                    if (i == 0 and j == 0)
+                    else None,
                 )
 
             ax.set_xlim(x_min, x_max)
@@ -575,7 +622,7 @@ def main() -> int:
                 ax.set_xlabel("Frequency (Hz)")
             if j == 0:
                 ax.set_ylabel(ylabel)
-            ax.set_title(f"({i+1},{j+1})", fontsize=9)
+            ax.set_title(f"({i + 1},{j + 1})", fontsize=9)
 
     handles, labels_out = axes[0, 0].get_legend_handles_labels()
     if handles:
@@ -592,7 +639,9 @@ def main() -> int:
     # output_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output_path, dpi=220, bbox_inches="tight")
     if output_path.suffix.lower() == ".pdf":
-        fig.savefig(output_path.with_suffix(".png"), dpi=220, bbox_inches="tight")
+        fig.savefig(
+            output_path.with_suffix(".png"), dpi=220, bbox_inches="tight"
+        )
 
     print("Loaded input files:")
     for p in idata_paths:

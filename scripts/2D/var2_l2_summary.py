@@ -197,10 +197,14 @@ def main(args: argparse.Namespace) -> None:
         args.latex_output.write_text(latex_table + "\n", encoding="utf-8")
 
     if args.print_json or (
-        args.json_output is None and args.latex_output is None and not args.print_latex
+        args.json_output is None
+        and args.latex_output is None
+        and not args.print_latex
     ):
         print(json.dumps(summary, indent=2, sort_keys=True))
-    if args.print_latex or (args.json_output is None and args.latex_output is None):
+    if args.print_latex or (
+        args.json_output is None and args.latex_output is None
+    ):
         print()
         print(latex_table)
 
