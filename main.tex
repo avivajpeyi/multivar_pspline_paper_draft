@@ -770,14 +770,14 @@
 		\label{tab:lisa_results}
 		\begin{ruledtabular}
 			\setlength{\tabcolsep}{4pt}
-			\begin{tabular}{llccccccc}
-				Dataset & Duration & $N_{b}$ & $N_{c}$ & RIAE & $\Delta_{\rm PSD}$ & $\Delta_{\rm coh}$ & Runtime \\ \hline
-				\texttt{noise4a} & $1$\,mo & $4$  & $1024$ & $0.0047$ & $4.6\%$ & $2.4\%$ & $274$\,s \\
-				\texttt{noise4a} & $6$\,mo & $25$ & $1024$ & $0.0053$ & $1.9\%$ & $1.0\%$ & $331$\,s \\
-				\texttt{noise4a} & $1$\,yr & $52$ & $1024$ & $0.0050$ & $1.2\%$ & $0.7\%$ & $1012$\,s \\
-				\texttt{noise5a} & $1$\,mo & $4$  & $1024$ & ---     & $4.7\%$ & $2.4\%$ & $236$\,s \\
-				\texttt{noise5a} & $6$\,mo & $25$ & $1024$ & ---     & $1.9\%$ & $1.0\%$ & $313$\,s \\
-				\texttt{noise5a} & $1$\,yr & $52$ & $1024$ & ---     & $1.1\%$ & $0.6\%$ & $1149$\,s \\
+			\begin{tabular}{llcccccc}
+				Noise & Duration & $N_{b}$ &  RIAE & $\Delta_{\rm PSD}$ & $\Delta_{\rm coh}$ & Runtime \\ \hline
+				\texttt{4a} & $1$\,mo & $4$  &  $0.0047$ & $4.6\%$ & $2.4\%$ & $274$\,s \\
+				\texttt{4a} & $6$\,mo & $25$ &  $0.0053$ & $1.9\%$ & $1.0\%$ & $331$\,s \\
+				\texttt{4a} & $1$\,yr & $52$ &  $0.0050$ & $1.2\%$ & $0.7\%$ & $1012$\,s \\
+				\texttt{5a} & $1$\,mo & $4$  &  ---     & $4.7\%$ & $2.4\%$ & $236$\,s \\
+				\texttt{5a} & $6$\,mo & $25$ &  ---     & $1.9\%$ & $1.0\%$ & $313$\,s \\
+				\texttt{5a} & $1$\,yr & $52$ &  ---     & $1.1\%$ & $0.6\%$ & $1149$\,s \\
 			\end{tabular}
 		\end{ruledtabular}
 	\end{table}
@@ -922,7 +922,7 @@
 	and configuration files needed to reproduce the results. 
 	Installation instructions and dependency information (tested on Python~$\geq$3.10$)$ are provided in the repository \texttt{README}. 
 	The software is released under the MIT License, permitting free use, modification, and distribution. 
-	The datasets generated are available available at the public Zenodo repository~\citeme.
+	The datasets generated are available available at the public Zenodo repository.
 	LISA time series data is available at~\citep{zenodoLisaDataset}. 
 
 
