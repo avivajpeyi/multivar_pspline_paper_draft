@@ -63,7 +63,7 @@
 		We present a Bayesian multivariate P-spline method for estimating the
 		frequency-dependent cross-spectral density matrix of stationary vector time
 		series. The inverse spectral matrix is parametrised through a
-		frequency-varying Cholesky factor with log-diagonal terms, enforcing
+		frequency-varying Cholesky factor with log-diagonal terms, \RM{(We model the lower-triangular and diagonal components of the frequency-varying Cholesky decomposition of the inverse spectral density matrix , thereby .. at every frequency. Model flexibility and smoothness for each Cholesky component is induced by a penalized B-spline prior)} enforcing
 		Hermitian positive definiteness at every frequency, while smoothness is
 		induced by penalised B-spline priors on each Cholesky component.
 		Inference proceeds under a blocked, coarse-grained Whittle likelihood
@@ -101,17 +101,17 @@
 	smooth functions as linear combinations of B-spline basis functions with a
 	roughness penalty on adjacent coefficients. In a Bayesian formulation this
 	penalty corresponds to a hierarchical Gaussian prior on the spline
-	coefficients, with the smoothing parameter integrated out. Applied to
+	coefficients, with the smoothing parameter integrated out. \pmr{Technically, the penalty could be incorporated without the hierarchical structure. Should it not be more appropriate to say something like: ``In a Bayesian formulation, the penalty can be incorporated naturally into the prior distribution of the spline coefficients"} Applied to
 	spectral density estimation via the Whittle likelihood, this yields a
 	smooth, data-driven estimator that requires no parametric noise template.
 	Univariate Bayesian P-spline PSD methods have been applied to GW data
-	\citep{maturana-russel_bayesian_2021}, and recent LISA-specific work has introduced log-spline
+	\citep{maturana-russel_bayesian_2021} \pmr{We didn't apply it to GW data, but I'd like to cite it somewhere}, and recent LISA-specific work has introduced log-spline
 	representations tuned to the steep low-frequency rise of LISA noise
 	\citep{aimen2026lisa}, as well as nonparametric stochastic-background
 	searches that jointly model unknown noise shapes
 	\citep{baghi2023sgwb,santini2025sgwb}.
 
-	These univariate approaches model each channel independently. The
+	These univariate approaches model each channel independently. \pmr{I'd improve the connection of these sentences with something like: ``This is justified in the idealised equal-arm ..."}The
 	idealised equal-arm stationary LISA configuration has vanishing
 	off-diagonal cross-spectra between the three TDI channels, but realistic
 	noise --- unequal arm lengths, per-MOSA imbalance, and instrumental
@@ -119,24 +119,26 @@
 	off-diagonal entries in the $3\times 3$ spectral density matrix
 	$\S(f)$. Treating these cross-spectra as zero when they are not can
 	degrade sensitivity to stochastic GW backgrounds and bias parameter
-	estimation \citep{yi2025biases,yi2026biases2,chandramouli2024grtests}.
+	estimation \citep{yi2025biases,yi2026biases2,chandramouli2024grtests}\RM{do these references really look at bias induced by zero cross-spectra? Some look at the effect of ignoring higher order modes in the GW signal. Ref 11 links to a totally different paper on reinforcement learning.}.
 	Modelling $\S(f)$ nonparametrically therefore requires a
-	parametrisation that guarantees Hermitian positive definiteness at every
-	frequency while allowing each element to vary smoothly with frequency.
+	parametrisation \RM{nonparametrically and parametrisation in one sentence: maybe " Modelling $\S(f)$ nonparametrically therefore requires a flexible model that ....} that guarantees Hermitian positive definiteness at every
+	frequency while allowing each element to vary smoothly with frequency. \pmr{What about this here ``Any extension of univariate methods to nonparametrically model $\S(f)$ requires a parametrisation that ensures Hermitian positive definiteness at every frequency while allowing each matrix element to vary smoothly with frequency."?}
 
-	In this paper we extend the Bayesian P-spline PSD framework to the
+	In this paper we extend the Bayesian P-spline PSD framework \pmr{we can cite here the p-spline paper} to the
 	multivariate setting. We parametrise $\S(f)^{-1}$ through its Cholesky
 	decomposition \citep{RosenOri2007Aeom, Hu2023}, which factorises the
-	estimation problem into $p$ independent regression blocks that can be
-	sampled in parallel. 
+	estimation problem \RM{...which factorises the posterior density int $p$ independent components that can be sampled in parallel.} into $p$ independent regression blocks that can be
+	sampled in parallel and guarantees the Hermitian positive definiteness condition.
+    \RM{p undefined. Maybe start paragraph: In this paper we extend the Bayesian P-spline PSD framework to the multivariate $p$-dimensional setting.}
 	Each block's log-diagonal and complex off-diagonal
 	components are modelled with penalised B-splines under a hierarchical
-	smoothing prior. 
+	smoothing prior \RM{and the real and imaginary part of the complex...}. 
 	Inference proceeds through a blocked, coarse-grained
 	Whittle likelihood with safe-Bayes $\eta$-tempering~\citep{grunwald2019}
 	to stabilise posterior calibration, using the No-U-Turn Sampler
 	\citep{hoffman2014_NUTS} whose chains are started from draws of a
 	stochastic variational approximation~\citep{hoffman2013_SVI}. 
+    \RM{This prior is updated by ... Also, this is quite a long sentence. Maybe full stop after "calibration" (is the the right word?) then:" Each chain is ..."}
 	We validate
 	the method on a bivariate VAR(2) benchmark against \citet{Liu2023}, a
 	three-channel VAR(2) simulation, and a simulated LISA data segment.
@@ -145,7 +147,7 @@
 	Section~\ref{sec:psplines} develops the statistical model and the
 	inference scheme. Section~\ref{sec:application} presents simulation
 	studies on a 3D VAR(2) benchmark and on simulated LISA TDI data.
-	Section~\ref{sec:discussion} discusses limitations and future
+	Section~\ref{sec:discussion} \pmr{summarises the results and ...} discusses limitations and future
 	directions.
 
 	\section{Multivariate P-splines}\label{sec:psplines}
@@ -198,7 +200,7 @@
 	n_{b}\sum_{t}w_{t}^{2}/(\sum_{t}w_{t})^{2}$ (with $n_{b}=n/N_{b}$),
 	so that the complex-Wishart mean of $\Y(f_{k})$ remains
 	$T_{b}\,\S(f_{k})$ and Eqs.~\eqref{eq:blocked-trace}--\eqref{eq:log-like}
-	apply unchanged. The VAR(2) simulation study of
+	apply unchanged. \pmr{I'd move the next details to their corresponding sections.} The VAR(2) simulation study of
 	Section~\ref{subsec:sim_3d_var2} uses a rectangular window
 	($\mathrm{ENBW}=1$); the LISA application of
 	Section~\ref{subsec:lisa} uses a Tukey window with shape parameter
@@ -223,7 +225,7 @@
 	trace cyclic property $\tr(ABC)=\tr(CAB)$, the blocked likelihood
 	reduces to
 	\begin{equation}
-		\label{eq:blocked-trace}
+g		\label{eq:blocked-trace}
 		\mathcal{L}_{b}(\d|\S)
 		\propto \prod_{k=1}^{n/(2N_{b})}
 		\left|\S(f_{k})\right|^{-N_{b}}
@@ -235,7 +237,7 @@
 	$\A\sim\mathcal{CW}_{d}(\M,m)$ if the $d\times d$ Hermitian positive
 	definite matrix $\A$ has density proportional to
 	$\det(\M)^{-m}\exp(-\tr[\M^{-1}\A])$, with mean $m\M$.}
-	from summing $N_{b}$ independent single-block periodogram
+	from summing $N_{b}$ \pmr{assumed} independent single-block periodogram
 	contributions:
 	\[
 		\I^{(i)}(f_{k})\sim\mathcal{CW}_{d}(T_{b}\S(f_{k}),1),
@@ -250,13 +252,14 @@
 	=\sum_{\nu=1}^{p}\u^{(k)}_{\nu}\u^{(k)*}_{\nu}$,
 	with rescaled eigenvectors
 	$\u^{(k)}_{\nu}=\sqrt{\lambda^{(k)}_{\nu}}\,\v^{(k)}_{\nu}$.
-	Substituting into the trace yields the eigenvector form
+	Substituting into the trace yields the eigenvector form \pmr{Substituting into the trace in \eqref{eq:blocked-trace} gives the eigenvector form of the blocked likelihood}
 	\begin{equation}
 		\label{eq:log-like}
 		\mathcal{L}_{b}(\d|\S)
 		\propto \prod_{k=1}^{n/(2N_{b})} \left|\S(f_{k})\right|^{-N_{b}}
 		\exp\!\left(-\tfrac{1}{T_{b}}\sum_{\nu=1}^{p}\u_{\nu}^{(k)*}\S(f_{k})^{-1}\u_{\nu}^{(k)}\right).
 	\end{equation}
+    \pmr{I'd briefly add here the justification for this}
 
 	\paragraph{Coarse graining.}
 	\label{subsec:coarse}
@@ -482,6 +485,7 @@
 	non-uniform knot sequences~\citep{Wand2008}.
 
 	\subsection{Bayesian Inference}
+    \labe{sec:}
 	We place hierarchical priors on the spline coefficients to enforce smoothness.
 	For each component $j$:
 	\begin{align}
@@ -507,7 +511,7 @@
 	after the knot locations are fixed, and reused for every gradient
 	evaluation. Each call to $\log\mathcal{L}_{\eta}$ then costs
 	$\mathcal{O}(p^{2}\,N_{c}\,K)$ floating-point operations:
-	$N_{c}$ coarse bins, $K$ basis functions per bin, and $p^{2}$ spline
+	$N_{c}$ coarse bins, $K$ basis \RM{Is this K=M_j=M_{jl} ?} functions per bin, and $p^{2}$ spline
 	components --- the $p$ diagonal log-variances $\log\delta_{jh}^{2}$
 	plus the real and imaginary parts of the $p(p-1)/2$ off-diagonal
 	Cholesky entries $\theta_{jl}$. Memory is dominated by the same
@@ -547,7 +551,7 @@
 
 	\paragraph{Convergence diagnostics.}
 	We assess convergence by checking that the chains satisfy
-	$\hat{R}<1.01$, that the bulk and tail effective sample sizes both
+	$\hat{R}<1.01$ \RM{does this have name?}, that the bulk and tail effective sample sizes both
 	exceed $400$, that the energy-Bayesian fraction of missing
 	information satisfies E-BFMI~$>0.3$, and that no chain shows
 	divergent transitions or maximum tree-depth saturation. All results
@@ -556,7 +560,7 @@
 
 	\section{\label{sec:application}Application}
 
-	\subsection{3D VAR(2) simulation study}
+	\subsection{Simulation study}
 	\label{subsec:sim_3d_var2}
 
 	We summarise spectral estimation accuracy with two complementary
@@ -568,12 +572,11 @@
 	where $\lVert \cdot \rVert_{F}$ denotes the Frobenius norm and the
 	integrals are evaluated numerically using Simpson's rule, measures the
 	bias of the posterior-median estimator $\widehat{S}(f)$ against the
-	true spectrum $S(f)$. The empirical coverage at level $\alpha$ ---
+	true spectrum $S(f)$. The empirical coverage at level $\alpha$,
 	the fraction of (frequency, matrix-element) pairs for which the truth
 	lies inside the pointwise $\alpha$ credible band, averaged over
-	realisations --- measures the calibration of the credible intervals.
-	Off-diagonal coverage is computed separately for the real and
-	imaginary parts of each cross-spectrum. We use $\alpha=0.9$
+	realisations, measures the calibration of the credible intervals.
+	We use $\alpha=0.9$
 	throughout.
 
 	We simulate from a three-dimensional VAR(2) process,
@@ -680,12 +683,14 @@
 		\includegraphics[width=1\linewidth]{figures/vi_vs_nuts_var3.png}
 		\caption{Representative $3\times3$ spectral density matrix estimate for a
 		single $n=16{,}384$ VAR(2) realisation ($\mathrm{RIAE}=0.114$, 90\% CI
-		coverage $84\%$). Each panel shows the raw periodogram (grey), the theoretical
+		coverage $87\%$). Each panel shows the raw periodogram (grey), the theoretical
 		spectrum (dotted black), and posterior medians with 90\% credible bands for NUTS
 		(blue) and VI (orange). Diagonal panels ($S_{11}$, $S_{22}$, $S_{33}$) show
 		the power spectral densities, while the off-diagonal panels show real and imaginary
 		parts of the cross-spectra. NUTS and VI medians are nearly identical across
-		all elements, while both track the true spectrum closely.}
+		all elements, while both track the true spectrum closely.
+        \avi{Need to fix legend}
+        }
 		\label{fig:vi_vs_nuts_var3}
 	\end{figure}
 
@@ -695,7 +700,7 @@
 	We apply the multivariate P-spline model to the three second-generation
 	time-delay interferometry (TDI) Michelson channels $X_{2}$, $Y_{2}$,
 	$Z_{2}$ from a publicly released LISA TDI dataset
-	\citep{zenodoLisaDataset}. The data were generated with
+	\citep{zenodoLisaDataset}. \RM{For the LISA applications, do we apply some window (Tukey, Kaiser) to each segment?} \avi{We mention it earlier in a footnote, i think we should move that here ie the window function used.} The data were generated with
 	\texttt{lisainstrument} \citep{bayle2024lisainstrument} under the LDC Spritz
 	noise model \citep{ldcspritz} at a sampling rate of
 	$f_{s}=0.5$\,Hz and constant $8.3$\,s light travel times; the six
@@ -756,14 +761,13 @@
 			tempering $\eta=0.5$ for the symmetric (\texttt{noise4a}) and
 			asymmetric (\texttt{noise5a}) simulations at three observation
 			durations. $N_{b}$ is the number of Wishart time blocks (chosen
-			to give $\sim 7$-day blocks: $\lfloor T/(7\,\text{d})\rfloor$);
-			$N_{c}$ is the number of in-band coarse frequency bins, set
-			to a target of $1024$ via the schedule of
-			Section~\ref{subsec:coarse}. RIAE is the Frobenius-norm relative
+			to give $\sim 7$-day blocks: $\lfloor T/(7\,\text{d})\rfloor$) and
+			$N_{c}$ is set
+			to $1024$. RIAE is the Frobenius-norm relative
 			integrated absolute error of the posterior-median spectral
 			matrix against the analytic reference (\texttt{noise4a} only).
 			$\Delta_{\rm PSD}$ and $\Delta_{\rm coh}$ are the median
-			pointwise relative widths of the 90\% credible bands on the
+			pointwise relative widths \RM{how is that defined} of the 90\% credible bands on the
 			diagonal PSDs and the off-diagonal coherences, respectively.
 			Runtime is wall-clock seconds for one full SVI+NUTS run on a
 			single 4-core CPU node.}
@@ -853,7 +857,7 @@
 	rather than down-weighting the entire likelihood. A debiased
 	formulation would in principle make $\eta$ unnecessary while
 	retaining the linear scaling and Cholesky decoupling of the
-	present method.
+	present method. \RM{I am not sure if this is the right conclusion. Even if you have a debiased Whittle likelihood, you might still end up with the very same steep likelihood and problems in the NUTS sampler.}
 
 	\paragraph{Informative priors.}
 	The hierarchical Gaussian smoothing prior used here is
@@ -882,7 +886,7 @@
 	lengths over the year-long orbital period, and per-link noise levels
 	drift on timescales from hours (thermal cycling, glitches) to
 	months (component aging). A natural and tractable extension is to
-	assume \emph{local} stationarity: partition the mission timeline
+	assume \emph{local} stationarity \RM{I think this should be called piecewise not local stationarity}: partition the mission timeline
 	into segments short enough that within-segment stationarity is a
 	good approximation but long enough that the Whittle approximation
 	remains accurate, and either fit each segment independently or
@@ -928,14 +932,14 @@
 
 	\begin{acknowledgments}
 		We thank Martina Muratore, Federico Pozzoli, Nikolaos Karnesis, Quentin
-		Baghi, Jean-Baptiste Bayle, and others in the LISA Noise Non-Stationarities
+		Baghi, Jean-Baptiste Bayle, Ollie Burke,and others in the LISA Noise Non-Stationarities
 		Group (part of the ``Deep analysis group'' of the Distributed Data Processing
 		Centre, DDPC) for helpful discussions. We additionally thank Jean-Baptiste
 		Bayle for providing the LISA dataset, and the University of Glasgow for the computing
 		resources that supported JB in simulating the dataset. PMR, RM, and AV
-		gratefully acknowledge support from the Marsden Fund Council grant MFP-UOA2131,
+		gratefully acknowledge support from the Marsden Fund Council grants MFP-UOA2131 and MFP-UOA2531,
 		funded by the New Zealand Government and managed by the Royal Society Te Apārangi.
-		Ollie funding. This work was performed on the OzSTAR national facility at Swinburne
+		This work was performed on the OzSTAR national facility at Swinburne
 		University of Technology. The OzSTAR program receives funding in part from
 		the Astronomy National Collaborative Research Infrastructure Strategy (NCRIS)
 		allocation provided by the Australian Government, and from the Victorian Higher
