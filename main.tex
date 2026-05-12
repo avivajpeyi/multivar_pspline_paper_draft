@@ -129,12 +129,22 @@
 	at every frequency while allowing each matrix element to vary smoothly
 	with frequency.
 
-    \textcolor{red}{RM: include paragraph on other current nonparametric approaches to model XYZ psd matrix:}
-    %
-    Muratore, Gair and Speri~\citep{PhysRevD.109.042001} model the spectra and the real and imaginary parts of the co-spectra of $\S(f)$ individually using natural cubic splines but do not guarantee that the resulting matrix is positive definite. An alternative approach starts with the six single links, assumes that the dominant secondary noises in the single links, the test mass acceleration noise and the optical metrology system noise, are equal, uncorrelated and characterised by the same univariate spectral densities $S_{TM}$ and $S_{OMS}$. The delay operators that define the XYZ TDI variables as linear combinations of time-shifted single link measurments are approximated as complex phasing operators. This then allows to represent the noise spectral density matrix as a Hermitian positive definite matrix where only the univariate test mass and optical metrology system noise components are modelled nonparametrically using cubic splines \citep{BaghiQuentin2023Ugbf} -- with fixed and known TDI transfer functions. 
+    Existing nonparametric treatments of LISA TDI spectral matrices take two
+    main routes. Muratore, Gair and Speri~\citep{PhysRevD.109.042001} model
+    the auto-spectra and the real and imaginary parts of the co-spectra of
+    $\S(f)$ separately using natural cubic splines. This is flexible, but does
+    not by itself guarantee that the assembled matrix is positive definite.
+    A more structured alternative starts from the six single-link
+    measurements, assumes equal and uncorrelated test-mass acceleration and
+    optical-metrology-system noises with univariate spectra $S_{TM}$ and
+    $S_{OMS}$, and approximates the delay operators defining the XYZ TDI
+    variables as complex phase factors. With fixed, known TDI transfer
+    functions, the resulting XYZ spectral matrix is Hermitian positive
+    definite while only $S_{TM}$ and $S_{OMS}$ are modelled nonparametrically
+    with cubic splines~\citep{BaghiQuentin2023Ugbf}.
     
 
-	In this paper, we model with PSD matrix of the XYZ TDI variables directly by extending the Bayesian P-spline PSD framework
+	In this paper, we model the PSD matrix of the XYZ TDI variables directly by extending the Bayesian P-spline PSD framework
 	\citep{maturana-russel_bayesian_2021} to the multivariate $p$-dimensional
 	setting. We parametrise $\S(f)^{-1}$ through its Cholesky
 	decomposition \citep{RosenOri2007Aeom, Hu2023}, which factorises the
@@ -179,8 +189,8 @@
 	\end{align}
 	with $f_{k}=k/T$ for $k=1,\ldots,N$, where $N=\lfloor n/2\rfloor$.
 
-	For stationary series with absolutely summable autocovariances
-	$\sum_{h=1}^{\infty}|\Gamma_{lm}(h)|<\infty$, \pmr{Is the $ml$ correct? We don't use it later} the Fourier coefficients
+	For stationary series with absolutely summable matrix autocovariances
+	$\sum_{h=-\infty}^{\infty}\lVert\Gamma(h)\rVert<\infty$, the Fourier coefficients
 	$\d(f_{k})$ are asymptotically independent, complex Gaussian with mean zero
 	and covariance $T\,\S(f_{k})$, where
 	\[
@@ -195,8 +205,8 @@
 		\label{eq:Whittle likelihood}\mathcal{L}(\d|\S) & \propto \prod_{k=1}^{N}\det(\S(f_{k}))^{-1}\times \nonumber         \\
 		                                                & \exp\left(-\frac{1}{T}\d(f_{k})^{*} \S(f_{k})^{-1}\d(f_{k})\right),
 	\end{align}
-	where $\d(f_{k})^{*}$ denotes the conjugate transpose \pmr{of $\d(f_{k})$} and $\S(f_{k})$ is
-	Hermitian positive semidefinite \pmr{a Hermitian positive semidefinite matrix}.
+	where $\d(f_{k})^{*}$ denotes the conjugate transpose of $\d(f_{k})$ and
+	$\S(f_{k})$ is a Hermitian positive semidefinite matrix.
 
 	\paragraph*{Blocking.}
 	To trade frequency resolution for periodogram stability we partition
@@ -267,7 +277,11 @@
 		\exp\!\left(-\tfrac{1}{T_{b}}\sum_{\nu=1}^{p}\u_{\nu}^{(k)*}\S(f_{k})^{-1}\u_{\nu}^{(k)}\right).
 	\end{equation}
 	This follows from the spectral decomposition of the Hermitian positive
-	semidefinite $\Y(f_k)$ and the linearity of the trace. \pmr{Do we explain somewhere why we do this?}
+	semidefinite $\Y(f_k)$ and the linearity of the trace. The
+	eigenvector representation is used computationally because it turns the
+	trace contribution into a sum of quadratic forms in the Cholesky
+	parameters, which is the form that factorises into the per-channel
+	regressions below.
 
 	\paragraph{Coarse graining.}
 	\label{subsec:coarse}
@@ -275,9 +289,7 @@
 	$n/(2N_{b})$, but each of the remaining frequencies still requires a
 	separate evaluation of $\S(f_{k})^{-1}$. Where $\S(f)$ is slowly
 	varying, we can pool adjacent frequencies to gain further speed at
-	negligible accuracy cost. \pmr{For this purpose, the block frequencies are partitioned into $N_c$ disjoint subsets $J_c$, that is,
-    $\{f_1, \ldots, f_{n/(2N_b)}\} = \bigcup_{h=1}^{N_c} J_h,$
-    each containing $N_h$ adjacent frequencies with midpoint $\bar{f}_h$. Then, the per-frequency matrix $\mathbf{Y}(f_k)$ is replaced by the within-bin sum $\mathbf{Y}_h^{*} = \sum_{f \in J_h} \mathbf{Y}(f).$} Partition the block frequencies into
+	negligible accuracy cost. Partition the block frequencies into
 	$N_{c}$ disjoint subsets
 	$\{f_{1},\ldots,f_{n/(2N_{b})}\}=\bigcup_{h=1}^{N_{c}}J_{h}$, each
 	containing $N_{h}$ adjacent frequencies with midpoint $\bar{f}_{h}$. 
@@ -374,10 +386,10 @@
 	$\theta_{jl}^{(h)}$ ($l<j$) and $\delta_{jh}$ across the coarse bins
 	$h=1,\ldots,N_{c}$.
 
-	Explicitly \pmr{In particular}, for $p=3$ channels (as in the LISA case), the three
+	In particular, for $p=3$ channels (as in the LISA case), the three
 	factors depend on the parameter subvectors $\bdelta_{1}$,
-	$(\bdelta_{2},\btheta_{2})$, and $(\bdelta_{3},\btheta_{3})$
-	respectively \pmr{, as follows}:
+	$(\bdelta_{2},\btheta_{2})$, and $(\bdelta_{3},\btheta_{3})$,
+	respectively, as follows:
 	\begin{widetext}
 	\begin{align}
 		\mathcal{L}_{1}(\bdelta_{1})
@@ -430,7 +442,7 @@
 	which is equivalent to scaling the Wishart shape parameter
 	$N_{b}N_{h}\mapsto \eta\,N_{b}N_{h}$ in
 	Eq.~\eqref{eq:log-like-coarse}. The limit $\eta\to 1$ recovers the
-	original likelihood; $\eta\to 0$ recovers the prior. Intermediate
+	original likelihood, while $\eta\to 0$ recovers the prior. Intermediate
 	$\eta$ down-weights the (asymptotic) likelihood relative to the prior in
 	exactly the right amount to restore nominal coverage when the
 	approximation is imperfect.
@@ -508,7 +520,9 @@
 	$\phi_{j}$, $\delta_{j}$ are precision hyperparameters. We use
 	$\widetilde{\bold{P}}_{j}=\bold{P}_{j}+\epsilon\,\mathbf{I}$ with
 	$\epsilon=10^{-6}$ to ensure the prior precision is strictly positive
-	definite. \pmr{Do we define somewhere the $\alpha$ and $\beta$ values?}
+	definite. Unless stated otherwise, the results below use
+	$\alpha_{\phi}=\beta_{\phi}=1$ and
+	$\alpha_{\delta}=\beta_{\delta}=1$.
 
 	Combining the $\eta$-tempered likelihood
 	(Eq.~\ref{eq:eta-tempered}) with these priors and the Cholesky
@@ -534,7 +548,7 @@
 	integrator steps required to traverse the posterior. As a rough
 	scale, a single evaluation of $\log\mathcal{L}_{\eta}$ on the 1-year
 	LISA configuration ($p=3$, $N_{c}=1024$, $K=100$) takes a fraction
-	of a millisecond on a single CPU core; empirical end-to-end
+	of a millisecond on a single CPU core. Empirical end-to-end
 	wall-clock numbers are reported alongside the tables in
 	Section~\ref{sec:application}.
 
@@ -558,7 +572,7 @@
 	an additional 2000 sampling steps per chain. These sampler settings
 	are used for both the simulation study
 	(Section~\ref{subsec:sim_3d_var2}) and the LISA application
-	(Section~\ref{subsec:lisa}); only the basis size $K$, the number of
+	(Section~\ref{subsec:lisa}). Only the basis size $K$, the number of
 	blocks $N_{b}$, and the tempering $\eta$ vary between the two.
 
 	\paragraph{Convergence diagnostics.}
@@ -576,16 +590,20 @@
 	\label{subsec:sim_3d_var2}
 
 	We summarise spectral estimation accuracy with two complementary
-	metrics. \pmr{The first is the relative ...} The relative integrated absolute error (RIAE)
+	metrics. The first is the relative integrated absolute error (RIAE),
 	\begin{equation}
 		\operatorname{RIAE}= \frac{\int \! \left\lVert \widehat{S}(f) - S(f) \right\rVert_{F}
 		\, \mathrm{d}f}{\int \! \left\lVert S(f) \right\rVert_{F} \, \mathrm{d}f},
 	\end{equation}
 	where $\lVert \cdot \rVert_{F}$ denotes the Frobenius norm and the
-	integrals are evaluated numerically using Simpson's rule, \pmr{This metrics measures ...} measures the bias of the posterior-median estimator $\widehat{S}(f)$ against \pmr{relative to} the true spectrum $S(f)$. \pmr{The second metric is the empirical ...} The empirical coverage at level $\alpha$, \pmr{defined as}
-	the fraction of (frequency, matrix-element) pairs for which the truth \pmr{true values}
-	lies inside the pointwise $\alpha$ credible band, averaged over
-	realisations, \pmr{This metric measures ...} measures the calibration of the credible intervals. We use $\alpha=0.9$ throughout.
+	integrals are evaluated numerically using Simpson's rule. This metric
+	measures the bias of the posterior-median estimator $\widehat{S}(f)$
+	relative to the true spectrum $S(f)$. The second metric is the
+	empirical coverage at level $\alpha$, defined as the fraction of
+	(frequency, matrix-element) pairs for which the true values lie inside
+	the pointwise $\alpha$ credible band, averaged over realisations. This
+	metric measures the calibration of the credible intervals. We use
+	$\alpha=0.9$ throughout.
 
 	We simulate from a three-dimensional VAR(2) process,
 	\begin{align}
@@ -597,19 +615,21 @@
 		A_{2}  & = \begin{bmatrix}-0.2&0.5&0.0 \\ 0.4&-0.1&0.0 \\ 0.0&0.0&-0.1\end{bmatrix},       \\
 		\Sigma & = \begin{bmatrix}0.25&0.00&0.08 \\ 0.00&0.25&0.08 \\ 0.08&0.08&0.25\end{bmatrix}.
 	\end{align}
-    \pmr{These parameter specifications guarantee stationarity of the process.}
+	These coefficient matrices define a stationary process: the companion
+	matrix has spectral radius $0.774<1$.
     
 	The one-sided theoretical spectral density matrix is
 	\begin{align}
-		\mathbf{S}(f) &= \frac{2}{f_{s}}\,H(f)\,\Sigma\,H(f)^{*}, \text{\pmr{with}}\\
+		\mathbf{S}(f) &= \frac{2}{f_{s}}\,H(f)\,\Sigma\,H(f)^{*}, \quad \text{with}\\
 		H(f) &= \left(I-\sum_{\ell=1}^{2}A_{\ell}\, e^{-i2\pi f\ell/f_{s}}\right)^{-1}.
 	\end{align}
 
 	We generate $\sim 500$ independent realisations of length $n=16{,}384$
 	(with a 512-point burn-in) at sampling frequency $f_{s}=1$. Each
-	realisation is fit with $K=10$ basis functions \pmr{across the Cholesky parameters}, while sweeping
-	$N_{b}\in\{1,2,4,8,16\}$ and $N_{h}\in\{\text{off},2,4,8,16,32\}$;
-	safe-Bayes tempering (Section~\ref{subsec:eta}) is left at $\eta=1$
+	realisation is fit with $K=10$ basis functions for each Cholesky
+	component, while sweeping
+	$N_{b}\in\{1,2,4,8,16\}$ and $N_{h}\in\{\text{off},2,4,8,16,32\}$.
+	Safe-Bayes tempering (Section~\ref{subsec:eta}) is left at $\eta=1$
 	throughout, with $N_{h}=\text{off}$ denoting no coarse-graining.
 	A rectangular window ($\mathrm{ENBW}=1$) is applied to each block before
 	computing the DFT.
@@ -617,11 +637,12 @@
 
 	Figure~\ref{fig:vi_vs_nuts_var3} shows the full $3\times 3$ spectral
 	matrix recovered for a representative $n=16{,}384$ realisation
-	($\mathrm{RIAE}=0.114$, coverage $84\%$), with NUTS and VI \pmr{SVI, no?}
+	($\mathrm{RIAE}=0.114$, coverage $84\%$), with NUTS and SVI
 	posteriors overlaid. Both samplers recover the diagonal PSDs and
-	off-diagonal cross-spectra, and their medians are nearly
+	off-diagonal cross-spectra with substantially smoother posterior
+	medians than the raw periodogram. The NUTS and SVI medians are nearly
 	indistinguishable, supporting the use of the SVI posterior as a fast
-	alternative to NUTS for initial exploration. \pmr{We should note that our method yields smoother results.}
+	alternative to NUTS for initial exploration.
 
 	Table~\ref{tab:3d_var2_results} reports a representative slice of the
 	$(N_{b},N_{h})$ grid. Coverage is near-nominal (90.8--91.8\%) across
@@ -694,15 +715,13 @@
 		\centering
 		\includegraphics[width=1\linewidth]{figures/vi_vs_nuts_var3.png}
 		\caption{Representative $3\times3$ spectral density matrix estimate for a
-		single $n=16{,}384$ VAR(2) realisation ($\mathrm{RIAE}=0.114$, 90\% CI
-		coverage $87\%$). Each panel shows the raw periodogram (grey), the theoretical
-		spectrum (dotted black), and posterior medians with 90\% credible bands for NUTS
-		(blue) and VI (orange). Diagonal panels ($S_{11}$, $S_{22}$, $S_{33}$) show
-		the power spectral densities, while the off-diagonal panels show real and imaginary
-		parts of the cross-spectra. NUTS and VI medians are nearly identical across
-		all elements, while both track the true spectrum closely. \pmr{I'd remove the last sentence and discuss about the medians in the text.}
-        \avi{Need to fix legend}
-        }
+			single $n=16{,}384$ VAR(2) realisation ($\mathrm{RIAE}=0.114$, 90\% CI
+			coverage $87\%$). Each panel shows the raw periodogram (grey), the theoretical
+			spectrum (dotted black), and posterior medians with 90\% credible bands for NUTS
+			(blue) and SVI (orange). Diagonal panels ($S_{11}$, $S_{22}$, $S_{33}$) show
+			the power spectral densities, while the off-diagonal panels show real and imaginary
+			parts of the cross-spectra.
+		}
 		\label{fig:vi_vs_nuts_var3}
 	\end{figure}
 
@@ -715,7 +734,7 @@
 	\citep{zenodoLisaDataset}. The data were generated with
 	\texttt{lisainstrument} \citep{bayle2024lisainstrument} under the LDC Spritz
 	noise model \citep{ldcspritz} at a sampling rate of
-	$f_{s}=0.5$\,Hz and constant $8.3$\,s light travel times; the six
+	$f_{s}=0.5$\,Hz and constant $8.3$\,s light travel times. The six
 	inter-spacecraft interferometer (ISI) and test-mass (TM) link
 	measurements were propagated through \texttt{pytdi}
 	\citep{staab2022pytdi} to produce the TDI 2.0 Michelson combinations used
@@ -726,9 +745,9 @@
 		amplitude spectral densities equal to the LDC baseline values
 		($2.4\times10^{-15}$\,m\,s$^{-2}$/$\sqrt{\mathrm{Hz}}$ and
 		$7.9\times10^{-12}$\,m/$\sqrt{\mathrm{Hz}}$, respectively). In this
-		regime the $3\times3$ cross-spectral matrix is close to degenerate
-		($S_{XX}\!\approx\!S_{YY}\!\approx\!S_{ZZ}$; off-diagonals equal in
-		magnitude) and a closed-form reference is available from the
+		regime the $3\times3$ cross-spectral matrix is close to degenerate:
+		$S_{XX}\!\approx\!S_{YY}\!\approx\!S_{ZZ}$, with off-diagonals equal in
+		magnitude. A closed-form reference is available from the
 		analytic TDI transfer of the link-level ASDs.
 		\item \texttt{noise5a} --- asymmetric realisation: the six per-MOSA
 		ASDs are drawn independently from
@@ -737,11 +756,13 @@
 		non-trivial off-diagonal structure, representing the physically
 		relevant regime where mis-modelled cross-spectral correlations
 		would degrade sensitivity to stochastic backgrounds. No closed-form
-		reference is available; a heavily averaged Welch estimate
+		reference is available, so a heavily averaged Welch estimate
 		($\sim\!10^{3}$ averages) is used as the comparison truth.
 	\end{itemize}
-	For both datasets we use $K=100$ basis functions placed adaptively \pmr{This is not clear to me} to
-	track the steep low-frequency rise, $N_{b}$ chosen to give blocks of
+	For both datasets we use $K=100$ basis functions for each Cholesky
+	component, with knots placed by the adaptive quantile rule described in
+	Section~\ref{sec:psplines} so that more knots fall near the steep
+	low-frequency rise. We choose $N_{b}$ to give blocks of
 	order one week in length, and a fixed safe-Bayes tempering
 	$\eta=0.5$. 
 	Each block is tapered with a Tukey window
@@ -814,12 +835,10 @@
 			datasets at safe-Bayes tempering $\eta=0.5$, shown at three
 			observation durations: $1$ month (blue), $6$ months (orange),
 			and $12$ months (green). Diagonal panels show the posterior
-			$90\%$ credible bands for the auto-spectra
-			$S_{XX},S_{YY},S_{ZZ}$; lower-triangle panels show the
-			coherence $|C_{ij}(f)|$ for each pair. Welch reference (grey)
-			is overplotted. The CI bands shrink monotonically with
-			observation length while remaining centred on the same noise
-			model. \pmr{I'd remove the last sentence and insert it somehow in the text}}
+				$90\%$ credible bands for the auto-spectra
+				$S_{XX},S_{YY},S_{ZZ}$. Lower-triangle panels show the
+				coherence $|C_{ij}(f)|$ for each pair. Welch reference (grey)
+				is overplotted.}
 		\label{fig:lisa_eta0p5}
 	\end{figure*}
 
@@ -832,7 +851,9 @@
 	tightened by a further factor of $\sim 1.7$ at 1 year. Wall-clock
 	runtime grows much more slowly than the data volume: a $13\times$
 	increase in mission duration ($1$\,mo $\to 1$\,yr) costs only a
-	$\sim\!4\times$ increase in wall time. The 1-month and 6-month fits
+	$\sim\!4\times$ increase in wall time. Across durations, the credible
+	bands shrink monotonically while remaining centred on the same noise
+	model. The 1-month and 6-month fits
 	($\sim\!280$\,s and $\sim\!330$\,s) are dominated by fixed NUTS
 	warm-up and SVI overhead, while the 1-year fit ($\sim\!1000$\,s)
 	begins to expose the per-gradient $\mathcal{O}(p\,N_{b}\,N_{c}\,K)$
@@ -929,7 +950,7 @@
 	\paragraph{Other extensions.}
 	The within-bin constant-$\S$ approximation underlying coarse-graining
 	(Eq.~\ref{eq:log-like-coarse}) can bias estimates near sharp
-	spectral features; adaptive bin widths that narrow around lines and
+	spectral features. Adaptive bin widths that narrow around lines and
 	transfer-function nulls are a natural extension. Hybrid
 	parametric/nonparametric models that embed known instrumental
 	features within the P-spline envelope are another route to improving
@@ -1010,7 +1031,7 @@
     \centering
     \caption{Bivariate VAR(2) benchmark using the $L_{2}$ error metric from
     \citet{Liu2023}. Entries are mean $\pm$ standard deviation over 500
-    independent realisations; smaller values are better.}
+    independent realisations. Smaller values are better.}
     \label{tab:var2_l2_results}
     \setlength{\tabcolsep}{12pt}
     \begin{NiceTabular}{lccc}
@@ -1050,16 +1071,16 @@
 			width of the 90\% credible band on the diagonal PSDs. Centre:
 			coverage of the 90\% credible band against the analytic
 			reference (dashed line is the nominal $0.9$). Right: matrix
-			RIAE. Connected circles are converged runs; crosses mark runs
+			RIAE. Connected circles are converged runs. Crosses mark runs
 			that hit NUTS maximum tree-depth saturation.}
 		\label{fig:lisa_eta_sweep}
 	\end{figure*}
 
 	Three features are robust across the sweep. First, the matrix RIAE is
 	essentially flat in $\eta$, varying by less than $\pm 5\%$ from
-	$\eta=0.01$ up to $\eta=1$ at every duration: the posterior median
-	is dominated by the data rather than by the tempering, \pmr{This is not reported, right?} so the
-	point estimate is not the relevant calibration quantity. Second, the
+	$\eta=0.01$ up to $\eta=1$ at every duration. In this experiment the
+	point estimate is therefore much less sensitive to $\eta$ than the
+	uncertainty calibration. Second, the
 	credible-band width contracts monotonically with $\eta$, by roughly
 	an order of magnitude from $\eta=0.01$ to $\eta=1$. The contraction
 	is steepest at the longest duration, consistent with the per-bin
@@ -1074,7 +1095,7 @@
 	tree-depth-limited regime visible at $\eta\geq 0.5$ for the 1-year
 	configuration. Reaching nominal coverage at full mission duration
 	would require either yet smaller $\eta$ or a more flexible model
-	(e.g.\ adaptive coarse-graining around the TDI nulls); we leave this
+	(e.g.\ adaptive coarse-graining around the TDI nulls). We leave this
 	to future work.
 
 	% \input{appdx}

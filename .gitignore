@@ -9,6 +9,8 @@
 .vscode/
 *.soc
 
+diff.tex
+
 node_modules/ 
 .npm/ 
 .pnpm-store/ 
