@@ -1,0 +1,20 @@
+{
+  "seed": 0,
+  "mode": "large",
+  "N": 16384,
+  "Nb": 4,
+  "Nh": 4,
+  "K": 10,
+  "nuts": {
+    "coverage": NaN,
+    "riae": NaN,
+    "lnz": NaN,
+    "lnz_err": NaN,
+    "ess_median": NaN,
+    "runtime": NaN
+  },
+  "vi": {
+    "coverage": NaN,
+    "riae": NaN
+  }
+}

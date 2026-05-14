@@ -46,9 +46,9 @@ FIG_DPI = 300
 
 POSTERIOR_FILL_ALPHA = 0.26
 POSTERIOR_FILL_ALPHA_PSD = 0.34
-WELCH_COLOR = "0.25"
-WELCH_ALPHA = 0.65
-WELCH_WIDTH = 0.9
+WELCH_COLOR = "0.65"
+WELCH_ALPHA = 0.6
+WELCH_WIDTH = 0.8
 WELCH_LINESTYLE = (0, (3, 2))  # short dashed
 LABEL_FONT_SIZE = 15
 
@@ -363,13 +363,14 @@ def plot_triangle(bundle: dict[str, object], out_path: Path) -> None:
         handles=_make_legend_handles(),
         loc="upper right",
         ncol=1,
-        bbox_to_anchor=(0.975, 0.985),
+        bbox_to_anchor=(0.975, 0.975),
         frameon=False,
         columnspacing=0.9,
         handlelength=2.2,
         handletextpad=0.6,
+        fontsize=10,
     )
-    fig.tight_layout(rect=(0.0, 0.0, 1.0, 0.985), h_pad=0.55, w_pad=0.65)
+    fig.tight_layout(rect=(0.0, 0.0, 1.0, 1.0), h_pad=0.55, w_pad=0.65)
     fig.savefig(out_path, dpi=FIG_DPI, bbox_inches="tight")
     plt.close(fig)
 

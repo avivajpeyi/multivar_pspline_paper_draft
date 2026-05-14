@@ -98,11 +98,19 @@
 	that matter for joint inference.
 
 	Nonparametric/flexible Bayesian approaches to PSD estimation have a well-developed
-	statistical foundation, characterised by an expansion of the PSD in terms of an infinite/large number of basis functions combined with noniformative priors on the coefficients. Examples include Bernstein polynomials with weights induced by Dirichlet process priors in \citep{10.1214/18-BA1126},
-    Akima splines with Beta distributions on control frequencies in \citep{BaghiQuentin2023Ugbf}, cosines with a discounted regularized horseshoe prior in \citep{PhysRevD.111.062003}, B-splines with knots and weights induced by Dirichlet process priors in \citep{EdwardsMatthewC.2019Bnsd}. With an a priori unknown and potentially infinite number of basis functions, posterior computation requires trans-dimensional Markov chain Monte Carlo (MCMC) algorithms which are computationally expensive. Avoiding trans-dimensional MCMC,
-    penalised B-splines (P-splines) \citep{EilersMarx1996} represent
-	smooth functions as linear combinations of a finite but large number of B-spline basis functions with a
-	roughness penalty on adjacent coefficients that prevents overfitting. In a Bayesian formulation this
+	statistical foundation, characterised by an expansion of the PSD in terms of an
+	infinite/large number of basis functions combined with noninformative priors on the
+	coefficients. Examples include
+	Bernstein polynomials with weights induced by Dirichlet process priors~\citep{10.1214/18-BA1126},
+	Akima splines with Beta distributions on control frequencies~\citep{BaghiQuentin2023Ugbf},
+	cosines with a discounted regularized horseshoe prior~\citep{PhysRevD.111.062003}, and
+	B-splines with knots and weights induced by Dirichlet process priors~\citep{EdwardsMatthewC.2019Bnsd}.
+	With an a priori unknown and potentially infinite number of basis functions, posterior
+	computation requires trans-dimensional Markov chain Monte Carlo (MCMC) algorithms,
+	which are computationally expensive. Penalised B-splines (P-splines)~\citep{EilersMarx1996}
+	avoid the trans-dimensional step by representing smooth functions as linear combinations
+	of a finite but large number of B-spline basis functions, with a roughness penalty on
+	adjacent coefficients that prevents overfitting. In a Bayesian formulation this
 	penalty can be incorporated naturally into the prior distribution of the
 	spline coefficients. Applied to
 	spectral density estimation via the Whittle likelihood, this yields a
@@ -125,7 +133,7 @@
 	can degrade sensitivity to stochastic GW backgrounds and bias parameter
 	estimation \citep{PhysRevD.110.104060,PhysRevD.107.123531}.
 	Any extension of univariate methods to nonparametrically model $\S(f)$
-	needs to ensure  Hermitian positive definiteness
+	needs to ensure Hermitian positive definiteness
 	at every frequency while allowing each matrix element to vary smoothly
 	with frequency.
 
@@ -577,7 +585,7 @@
 
 	\paragraph{Convergence diagnostics.}
 	We assess convergence by checking that the chains satisfy
-	$\hat{R}<1.01$ (the Rank-normalized Gelman--Rubin potential scale reduction factor~\citeme[Gelman \& Rubin 1992, arviz stats]), that the bulk and tail effective sample sizes both
+	$\hat{R}<1.01$ (the Rank-normalized Gelman--Rubin potential scale reduction factor~\cite{gelman1992inference, arviz_2019}, that the bulk and tail effective sample sizes both
 	exceed $400$, that the energy-Bayesian fraction of missing
 	information satisfies E-BFMI~$>0.3$, and that no chain shows
 	divergent transitions or maximum tree-depth saturation. All results
@@ -637,7 +645,7 @@
 
 	Figure~\ref{fig:vi_vs_nuts_var3} shows the full $3\times 3$ spectral
 	matrix recovered for a representative $n=16{,}384$ realisation
-	($\mathrm{RIAE}=0.114$, coverage $84\%$), with NUTS and SVI
+	($\mathrm{RIAE}=0.114$, coverage $87\%$), with NUTS and SVI
 	posteriors overlaid. Both samplers recover the diagonal PSDs and
 	off-diagonal cross-spectra with substantially smoother posterior
 	medians than the raw periodogram. The NUTS and SVI medians are nearly
@@ -645,7 +653,7 @@
 	alternative to NUTS for initial exploration.
 
 	Table~\ref{tab:3d_var2_results} reports a representative slice of the
-	$(N_{b},N_{h})$ grid. Coverage is near-nominal (90.8--91.8\%) across
+	$(N_{b},N_{h})$ grid. Coverage is near-nominal (89.8--90.8\%) across
 	every configuration, and the mean RIAE varies by less than 2\% across
 	the grid. The number of retained frequency bins $N_{c}$ falls by a
 	factor of up to 64 between the finest ($N_{b}=1$, no coarse-graining) and
@@ -749,116 +757,183 @@
 		$S_{XX}\!\approx\!S_{YY}\!\approx\!S_{ZZ}$, with off-diagonals equal in
 		magnitude. A closed-form reference is available from the
 		analytic TDI transfer of the link-level ASDs.
-		\item \texttt{noise5a} --- asymmetric realisation: the six per-MOSA
-		ASDs are drawn independently from
+		\item \texttt{noise5a} --- asymmetric realisation: the six
+		per-MOSA OMS and test-mass ASDs are drawn independently from
 		$\mathcal{U}(0.5,\,2.0)\times$baseline with a fixed seed. The
 		resulting cross-spectral matrix has distinct diagonals and
 		non-trivial off-diagonal structure, representing the physically
 		relevant regime where mis-modelled cross-spectral correlations
-		would degrade sensitivity to stochastic backgrounds. No closed-form
-		reference is available, so a heavily averaged Welch estimate
-		($\sim\!10^{3}$ averages) is used as the comparison truth.
+		would degrade sensitivity to stochastic backgrounds. A
+		closed-form $3\times3$ reference is built with the
+		\texttt{SEGWO} package~\citep{bayle_segwo} by feeding the
+		twelve measured per-MOSA ASDs through analytic OMS/TM filter
+		shapes and projecting through PyTDI's TDI 2.0 Michelson
+		($X_{2},Y_{2},Z_{2}$) combinations to obtain the full
+		$3\times3$ XYZ covariance at every frequency (implementation:
+		\texttt{lisa\_logpspline/src/segwo.py}).
 	\end{itemize}
-	For both datasets we use $K=100$ basis functions for each Cholesky
-	component, with knots placed by the adaptive quantile rule described in
-	Section~\ref{sec:psplines} so that more knots fall near the steep
-	low-frequency rise. We choose $N_{b}$ to give blocks of
+	We fit each dataset under two competing hypotheses for the
+	$3\times3$ noise cross-spectrum, designed to test whether the
+	XYZ$\to$AET orthogonal transformation diagonalises the LISA
+	noise covariance to within statistical resolution:
+	\begin{itemize}
+		\item $\mathcal{H}_{XYZ}$ --- the cross-spectral matrix has
+		fully populated off-diagonals. The multivariate Cholesky
+		model is fit directly to the $X_{2}Y_{2}Z_{2}$ time series
+		with $K=100$ basis functions for \emph{every} Cholesky
+		component (diagonal $\log\delta_{j}^{2}$ \emph{and}
+		off-diagonal $\theta_{jk}$). This is the unrestricted model.
+		\item $\mathcal{H}_{AET}$ --- the cross-spectral matrix is
+		(approximately) diagonal in the $A,E,T$ basis. The data are
+		first rotated into AET using the orthonormal LISA TDI
+		transformation matrix $M_{\mathrm{AET}}$ (whose unit
+		determinant introduces no log-likelihood Jacobian
+		correction). The same multivariate Cholesky model is then
+		fit with $K=100$ knots on the diagonals but only
+		$K_{\theta}=10$ knots on the off-diagonals. The restricted
+		off-diagonal prior keeps $S_{\mathrm{AET}}$ near diagonal.
+		The posterior spectral matrix is rotated back to the $XYZ$
+		basis for diagnostics.
+	\end{itemize}
+	For \texttt{noise4a} the AET basis diagonalises the noise
+	exactly, so $\mathcal{H}_{AET}$ should be a valid description.
+	For \texttt{noise5a} the per-MOSA asymmetry introduces genuine
+	off-diagonal power in the AET basis, and $\mathcal{H}_{AET}$
+	is expected to be mis-specified. $\mathcal{H}_{XYZ}$ is
+	unrestricted in both cases and serves as the reference.
+
+	For both models, knots are placed by the adaptive quantile rule
+	described in Section~\ref{sec:psplines} so that more knots fall near
+	the steep low-frequency rise. We choose $N_{b}$ to give blocks of
 	order one week in length, and a fixed safe-Bayes tempering
-	$\eta=0.5$. 
-	Each block is tapered with a Tukey window
+	$\eta=0.5$. Each block is tapered with a Tukey window
 	(shape parameter $\alpha=0.1$, $\mathrm{ENBW}\approx1.04$) before
-	computing the DFT to suppress spectral leakage.
-	The three TDI transfer-function nulls at $0.030$,
-	$0.060$, and $0.090$\,Hz are excised with half-width $1$\,mHz prior
-	to fitting. All other settings follow Section~\ref{sec:computation}.
+	computing the DFT to suppress spectral leakage. The three TDI
+	transfer-function nulls at $0.030$, $0.060$, and $0.090$\,Hz are
+	excised with half-width $1$\,mHz prior to fitting. All other settings
+	follow Section~\ref{sec:computation}.
 
 	Table~\ref{tab:lisa_results} summarises convergence and CI-width
-	diagnostics for the two datasets at 1-month, 6-month, and 1-year
-	observation durations. All six runs converge cleanly ($\hat R<1.01$,
-	no problematic divergences). For \texttt{noise4a}, where a closed-form
-	analytic spectral matrix is available, the Frobenius-norm relative
-	integrated absolute error stabilises at the half-percent level
-	(RIAE $\approx 5\times 10^{-3}$) across all durations, indicating that
-	the posterior-median tracks the true matrix to high fidelity. For
-	\texttt{noise5a}, where no analytic reference exists, we instead report
-	uncertainty: the median relative CI width on the diagonal PSDs, which
-	is the more informative quantity from a calibration standpoint. The
-	relative CI width contracts from $\approx\!4.6\%$ at 1\,month to
-	$\approx\!1.1\%$ at 1\,year --- a reduction of roughly $4\times$,
-	consistent with the $\sqrt{T}$ scaling expected for variance-dominated
-	Whittle inference. Coherence-band CI widths halve from
-	$\approx\!2.4\%$ to $\approx\!0.6\%$ over the same range. The two
-	datasets are virtually indistinguishable in CI width, confirming that
-	the per-MOSA noise asymmetry of \texttt{noise5a} does not penalise
-	the model's effective resolution.
+	diagnostics for the two models, two datasets, and three observation
+	durations. All twelve runs converge cleanly ($\hat R<1.01$, no
+	problematic divergences). The results split sharply along the
+	AET-diagonalisation hypothesis.
 
-	\begin{table}[H]
+	\emph{Symmetric noise (\texttt{noise4a}).} Both models recover the
+	analytic spectral matrix at the half-percent level
+	($\mathrm{RIAE}\approx 4.5\!-\!5.3\times10^{-3}$) across all
+	durations. The restricted $\mathcal{H}_{AET}$ model is no worse
+	than $\mathcal{H}_{XYZ}$ in posterior-median accuracy, consistent
+	with the AET basis exactly diagonalising the equal-link noise.
+
+	\emph{Asymmetric noise (\texttt{noise5a}).} The two models diverge
+	by more than an order of magnitude. $\mathcal{H}_{AET}$
+	stalls at $\mathrm{RIAE}\approx 1.8\!-\!2.2\times10^{-2}$ at all
+	durations --- a floor set by the residual off-diagonal AET power
+	that the restricted prior cannot represent. $\mathcal{H}_{XYZ}$,
+	in contrast, reaches $\mathrm{RIAE}\approx 9\!-\!11\times10^{-4}$,
+	about $20\times$ smaller, and continues to improve with duration.
+	This is the central diagnostic of the LISA study: when the
+	per-MOSA noise levels are asymmetric --- the physically realistic
+	regime --- the AET rotation does \emph{not} diagonalise the
+	cross-spectral matrix, and a multivariate model that estimates
+	the full Cholesky factor is required.
+
+	Posterior uncertainty contracts as expected for both models. The
+	median relative CI width on the diagonal PSDs falls from
+	$\approx\!4.7\%$ at 1\,month to $\approx\!1.2\%$ at 1\,year ---
+	a reduction of roughly $4\times$, consistent with the $\sqrt{T}$
+	scaling expected for variance-dominated Whittle inference --- and
+	is essentially identical across models and datasets, confirming
+	that the per-channel resolution is set by the data and not by the
+	choice of basis.
+
+	\begin{table*}[!htbp]
 		\centering
 		\caption{LISA TDI $X_{2}Y_{2}Z_{2}$ results at fixed safe-Bayes
 			tempering $\eta=0.5$ for the symmetric (\texttt{noise4a}) and
-			asymmetric (\texttt{noise5a}) simulations at three observation
-			durations. $N_{b}$ is the number of Wishart time blocks (chosen
-			to give $\sim 7$-day blocks: $\lfloor T/(7\,\text{d})\rfloor$) and
-			$N_{c}$ is set
-			to $1024$. RIAE is the Frobenius-norm relative
-			integrated absolute error of the posterior-median spectral
-			matrix against the analytic reference (\texttt{noise4a} only).
-			$\Delta_{\rm PSD}$ and $\Delta_{\rm coh}$ are the median
-			pointwise relative widths (median over frequencies of
-				$[\hat{S}^{95\%}(f)-\hat{S}^{5\%}(f)]/\hat{S}^{50\%}(f)$)
-				of the 90\% credible bands on the
-			diagonal PSDs and the off-diagonal coherences, respectively.
-			Runtime is wall-clock seconds for one full SVI+NUTS run on a
+			asymmetric (\texttt{noise5a}) simulations, fit with the
+			unrestricted multivariate XYZ model ($\mathcal{H}_{XYZ}$) and
+			the AET-rotated model with restricted off-diagonal basis
+			($\mathcal{H}_{AET}$, $K_{\theta}=10$), at three
+			observation durations. $N_{b}$ is the number of Wishart
+			time blocks (chosen to give $\sim 7$-day blocks:
+			$\lfloor T/(7\,\text{d})\rfloor$) and $N_{c}$ is set to
+			$1024$. RIAE is the Frobenius-norm relative integrated
+			absolute error of the posterior-median spectral matrix
+			against the analytic reference (closed-form equal-link
+			LDC for \texttt{noise4a}, SEGWO with measured per-MOSA
+			ASDs for \texttt{noise5a}). $\Delta_{\rm PSD}$ is the
+			median over frequencies of the pointwise relative width
+			$[\hat{S}^{95\%}(f)-\hat{S}^{5\%}(f)]/\hat{S}^{50\%}(f)$
+			of the 90\% credible band on the diagonal auto-spectra
+			(computed in the XYZ basis for both models). Runtime is
+			wall-clock seconds for one full SVI+NUTS pipeline run on a
 			single 4-core CPU node.}
 		\label{tab:lisa_results}
 		\begin{ruledtabular}
 			\setlength{\tabcolsep}{4pt}
-			\begin{tabular}{llcccccc}
-				Noise & Duration & $N_{b}$ &  RIAE & $\Delta_{\rm PSD}$ & $\Delta_{\rm coh}$ & Runtime \\ \hline
-				\texttt{4a} & $1$\,mo & $4$  &  $0.0047$ & $4.6\%$ & $2.4\%$ & $274$\,s \\
-				\texttt{4a} & $6$\,mo & $25$ &  $0.0053$ & $1.9\%$ & $1.0\%$ & $331$\,s \\
-				\texttt{4a} & $1$\,yr & $52$ &  $0.0050$ & $1.2\%$ & $0.7\%$ & $1012$\,s \\
-				\texttt{5a} & $1$\,mo & $4$  &  ---     & $4.7\%$ & $2.4\%$ & $236$\,s \\
-				\texttt{5a} & $6$\,mo & $25$ &  ---     & $1.9\%$ & $1.0\%$ & $313$\,s \\
-				\texttt{5a} & $1$\,yr & $52$ &  ---     & $1.1\%$ & $0.6\%$ & $1149$\,s \\
+			\begin{tabular}{llccccc}
+				Noise & Model & Duration & $N_{b}$ & RIAE & $\Delta_{\rm PSD}$ & Runtime \\ \hline
+				\texttt{4a} & $\mathcal{H}_{AET}$ & $1$\,mo & $4$  & $4.5\!\times\!10^{-3}$ & $4.8\%$ & $117$\,s \\
+				\texttt{4a} & $\mathcal{H}_{AET}$ & $6$\,mo & $25$ & $4.7\!\times\!10^{-3}$ & $1.9\%$ & $224$\,s \\
+				\texttt{4a} & $\mathcal{H}_{AET}$ & $1$\,yr & $52$ & $4.4\!\times\!10^{-3}$ & $1.2\%$ & $632$\,s \\
+				\texttt{4a} & $\mathcal{H}_{XYZ}$      & $1$\,mo & $4$  & $4.7\!\times\!10^{-3}$ & $4.6\%$ & $119$\,s \\
+				\texttt{4a} & $\mathcal{H}_{XYZ}$      & $6$\,mo & $25$ & $5.3\!\times\!10^{-3}$ & $1.9\%$ & $181$\,s \\
+				\texttt{4a} & $\mathcal{H}_{XYZ}$      & $1$\,yr & $52$ & $5.0\!\times\!10^{-3}$ & $1.2\%$ & $853$\,s \\ \hline
+				\texttt{5a} & $\mathcal{H}_{AET}$ & $1$\,mo & $4$  & $2.2\!\times\!10^{-2}$ & $4.9\%$ & $119$\,s \\
+				\texttt{5a} & $\mathcal{H}_{AET}$ & $6$\,mo & $25$ & $1.8\!\times\!10^{-2}$ & $1.9\%$ & $218$\,s \\
+				\texttt{5a} & $\mathcal{H}_{AET}$ & $1$\,yr & $52$ & $2.2\!\times\!10^{-2}$ & $1.3\%$ & $728$\,s \\
+				\texttt{5a} & $\mathcal{H}_{XYZ}$      & $1$\,mo & $4$  & $1.1\!\times\!10^{-3}$ & $4.5\%$ & $177$\,s \\
+				\texttt{5a} & $\mathcal{H}_{XYZ}$      & $6$\,mo & $25$ & $9.8\!\times\!10^{-4}$ & $1.9\%$ & $245$\,s \\
+				\texttt{5a} & $\mathcal{H}_{XYZ}$      & $1$\,yr & $52$ & $8.6\!\times\!10^{-4}$ & $1.3\%$ & $1089$\,s \\
 			\end{tabular}
 		\end{ruledtabular}
-	\end{table}
+	\end{table*}
 
 	\begin{figure*}[!t]
 		\centering
-		\includegraphics[width=0.48\linewidth]{figures/lisa_noise4a_eta0p5.png}\hfill
-		\includegraphics[width=0.48\linewidth]{figures/lisa_noise5a_eta0p5.png}
+		\includegraphics[width=0.48\linewidth]{figures/triangle_noise4a_eta0p5.png}\hfill
+		\includegraphics[width=0.48\linewidth]{figures/triangle_noise5a_eta0p5.png}
 		\caption{Posterior summaries of the LISA TDI
-			$X_{2}Y_{2}Z_{2}$ spectral matrix for the symmetric
-			\texttt{noise4a} (left) and asymmetric \texttt{noise5a} (right)
-			datasets at safe-Bayes tempering $\eta=0.5$, shown at three
-			observation durations: $1$ month (blue), $6$ months (orange),
-			and $12$ months (green). Diagonal panels show the posterior
-				$90\%$ credible bands for the auto-spectra
-				$S_{XX},S_{YY},S_{ZZ}$. Lower-triangle panels show the
-				coherence $|C_{ij}(f)|$ for each pair. Welch reference (grey)
-				is overplotted.}
+			$X_{2}Y_{2}Z_{2}$ spectral matrix from the unrestricted
+			$\mathcal{H}_{XYZ}$ model for the symmetric \texttt{noise4a}
+			(left) and asymmetric \texttt{noise5a} (right) datasets at
+			safe-Bayes tempering $\eta=0.5$, shown at three observation
+			durations: $1$ month (blue), $6$ months (orange), and $12$
+			months (green). Diagonal panels show the posterior $90\%$
+			credible bands for the auto-spectra
+			$S_{XX},S_{YY},S_{ZZ}$. Lower-triangle panels show the
+			coherence $|C_{ij}(f)|$ for each pair. Welch reference
+			(grey) is overplotted.}
 		\label{fig:lisa_eta0p5}
 	\end{figure*}
 
 	Figure~\ref{fig:lisa_eta0p5} overlays the three durations for both
-	datasets. The diagonal auto-spectra are recovered with sub-percent
-	bias and CI widths that contract with $\sqrt{T}$, while the
-	off-diagonal coherences --- the cross-channel quantities most
-	directly tied to stochastic-background and parameter-estimation
-	pipelines~\citep{katz2024globalfit} --- are resolved at the few-percent level by 6 months and
-	tightened by a further factor of $\sim 1.7$ at 1 year. Wall-clock
-	runtime grows much more slowly than the data volume: a $13\times$
-	increase in mission duration ($1$\,mo $\to 1$\,yr) costs only a
-	$\sim\!4\times$ increase in wall time. Across durations, the credible
-	bands shrink monotonically while remaining centred on the same noise
-	model. The 1-month and 6-month fits
-	($\sim\!280$\,s and $\sim\!330$\,s) are dominated by fixed NUTS
-	warm-up and SVI overhead, while the 1-year fit ($\sim\!1000$\,s)
-	begins to expose the per-gradient $\mathcal{O}(p\,N_{b}\,N_{c}\,K)$
-	cost as $N_{b}$ reaches $52$. Even the 1-year fit completes in under
-	twenty minutes on a single 4-core CPU node.
+	datasets under the $\mathcal{H}_{XYZ}$ model. The diagonal
+	auto-spectra are recovered with sub-percent bias and CI widths that
+	contract with $\sqrt{T}$, while the off-diagonal coherences --- the
+	cross-channel quantities most directly tied to
+	stochastic-background and parameter-estimation
+	pipelines~\citep{katz2024globalfit} --- are resolved at the
+	few-percent level by 6 months and tightened by a further factor of
+	$\sim 1.7$ at 1 year. Wall-clock runtime grows much more slowly
+	than the data volume: a $12\times$ increase in mission duration
+	($1$\,mo $\to 1$\,yr) costs only a $\sim\!7\times$ increase in
+	wall time for $\mathcal{H}_{XYZ}$. The 1-month and 6-month fits
+	($\sim\!120$--$245$\,s) are dominated by fixed NUTS warm-up and
+	SVI overhead, while the 1-year fit ($\sim\!850$--$1090$\,s) begins
+	to expose the per-gradient $\mathcal{O}(p\,N_{b}\,N_{c}\,K)$ cost
+	as $N_{b}$ reaches $52$. Even the 1-year fit completes in under
+	twenty minutes on a single 4-core CPU node --- roughly a
+	$2\times$ speed-up at 1\,month and $1.5\times$ at 6\,months over
+	the previous-generation single-model pipeline, with comparable
+	throughput at 1\,year. The $\mathcal{H}_{AET}$ model is
+	consistently faster than $\mathcal{H}_{XYZ}$ at fixed duration
+	(e.g.\ $632$\,s vs.\ $853$\,s at 1\,yr on \texttt{noise4a}),
+	reflecting the smaller off-diagonal basis, but at the cost of the
+	order-of-magnitude RIAE inflation on the asymmetric
+	\texttt{noise5a} regime.
 
 	\section{Discussion}
 	\label{sec:discussion}
@@ -877,10 +952,9 @@
 	On the synthetic 3D VAR(2) benchmark the un-tempered estimator
 	($\eta=1$) achieves coverage $\approx\!0.91$ at every $(N_{b},N_{h})$
 	configuration tested. On the LISA TDI data the same un-tempered
-	estimator over-concentrates, and a fixed safe-Bayes tempering
-	$\eta=0.5$ recovers credible bands that contract with $\sqrt{T}$
-	while keeping the sampler away from the tree-depth-saturated regime
-	visible at $\eta\to 1$ for the longest durations
+	estimator over-concentrates; a fixed safe-Bayes tempering $\eta=0.5$
+	recovers credible bands that contract with $\sqrt{T}$ and remain
+	well-behaved across all three observation durations
 	(Appendix~\ref{app:eta_sweep}).
 
 	\paragraph{$\eta$-tempering and debiased Whittle.}
@@ -912,8 +986,8 @@
 	would (i) make the smoothing hyperparameters physically meaningful as
 	fractional excursion bounds, (ii) shorten warm-up substantially, and
 	(iii) reduce the prior--data contention that drives over-coverage at
-	small $\eta$ in the appendix sweep. We expect this to be the
-	highest-leverage single change for production LISA pipelines.
+	small $\eta$ in the appendix sweep. We expect this to give the largest
+	practical improvement for production LISA pipelines.
 
 	\paragraph{Non-stationarity.}
 	The Whittle likelihood assumes wide-sense stationarity. Both
@@ -963,9 +1037,9 @@
 	The software developed for this project is open-source and publicly available from the GitHub repository 
 	\url{https://github.com/nz-gravity/LogPsplinePSD.git}, which contains all source code, example scripts, 
 	and configuration files needed to reproduce the results. 
-	Installation instructions and dependency information (tested on Python~$\geq$3.10$)$ are provided in the repository \texttt{README}. 
+	Installation instructions and dependency information (tested on Python~$\geq 3.10$) are provided in the repository \texttt{README}. 
 	The software is released under the MIT License, permitting free use, modification, and distribution. 
-	The datasets generated are available available at the public Zenodo repository.
+	The datasets generated are available at the public Zenodo repository.
 	LISA time series data is available at~\citep{zenodoLisaDataset}. 
 
 
@@ -975,7 +1049,12 @@
 		Group (part of the ``Deep analysis group'' of the Distributed Data Processing
 		Centre, DDPC) for helpful discussions. We additionally thank Jean-Baptiste
 		Bayle for providing the LISA dataset, and the University of Glasgow for the computing
-		resources that supported JB in simulating the dataset. PMR, RM, and AV
+		resources that supported JB in simulating the dataset. We
+		acknowledge the use of the \texttt{SEGWO}
+		package~\citep{bayle_segwo}, developed by J.-B.~Bayle and
+		O.~Hartwig, used here to construct the analytic $3\times3$
+		cross-spectral reference for the asymmetric \texttt{noise5a}
+		realisation. PMR, RM, and AV
 		gratefully acknowledge support from the Marsden Fund Council grants MFP-UOA2131 and MFP-UOA2531,
 		funded by the New Zealand Government and managed by the Royal Society Te Apārangi.
 		This work was performed on the OzSTAR national facility at Swinburne
@@ -1067,36 +1146,41 @@
 		\includegraphics[width=0.95\linewidth]{figures/lisa_eta_sweep.pdf}
 		\caption{Safe-Bayes $\eta$-sensitivity on the symmetric LISA
 			\texttt{noise4a} dataset at three observation durations
-			(1\,month, 6\,months, 1\,year). Left: median pointwise relative
-			width of the 90\% credible band on the diagonal PSDs. Centre:
-			coverage of the 90\% credible band against the analytic
-			reference (dashed line is the nominal $0.9$). Right: matrix
-			RIAE. Connected circles are converged runs. Crosses mark runs
-			that hit NUTS maximum tree-depth saturation.}
+			(1\,month, 6\,months, 1\,year).
+			Left: median pointwise relative width of the 90\% credible
+			band on the diagonal PSDs.
+			Centre: coverage of the 90\% credible band; horizontal
+			dashed line is the nominal $0.9$.
+			Right: matrix RIAE (narrow $y$-range---RIAE varies by
+			${\lesssim}5\%$ across the full sweep).
+			The vertical dotted line marks $\eta=0.5$, the value used in
+			Section~\ref{subsec:lisa}.}
 		\label{fig:lisa_eta_sweep}
 	\end{figure*}
 
-	Three features are robust across the sweep. First, the matrix RIAE is
-	essentially flat in $\eta$, varying by less than $\pm 5\%$ from
-	$\eta=0.01$ up to $\eta=1$ at every duration. In this experiment the
-	point estimate is therefore much less sensitive to $\eta$ than the
-	uncertainty calibration. Second, the
-	credible-band width contracts monotonically with $\eta$, by roughly
-	an order of magnitude from $\eta=0.01$ to $\eta=1$. The contraction
-	is steepest at the longest duration, consistent with the per-bin
-	Fisher information growing linearly with $N_{b}N_{h}$ as in
-	Eq.~\eqref{eq:fisher-scaling}. Third, coverage tracks CI width: at
-	$\eta=1$ coverage is well below nominal at all durations
-	($0.10$--$0.34$), while at $\eta=0.01$ it approaches the nominal
-	$0.9$ at $1$\,month but remains under-calibrated at longer durations
-	even at this aggressive tempering. The choice $\eta=0.5$ used in
-	Section~\ref{subsec:lisa} is a compromise that yields useful credible
-	bands at all three durations without driving the sampler into the
-	tree-depth-limited regime visible at $\eta\geq 0.5$ for the 1-year
-	configuration. Reaching nominal coverage at full mission duration
-	would require either yet smaller $\eta$ or a more flexible model
-	(e.g.\ adaptive coarse-graining around the TDI nulls). We leave this
-	to future work.
+	Three features emerge from Figure~\ref{fig:lisa_eta_sweep}.
+	First, the matrix RIAE is essentially flat across the entire sweep:
+	it varies by less than $\pm5\%$ about its mean at every duration,
+	confirming that the posterior-median point estimate is nearly
+	insensitive to $\eta$.
+	Second, credible-band width contracts monotonically with $\eta$, by
+	roughly an order of magnitude from $\eta=0.01$ to $\eta=1$, with
+	the steepest contraction at the longest duration---consistent with
+	the per-bin Fisher information scaling as $N_{b}N_{h}$
+	(Eq.~\eqref{eq:fisher-scaling}).
+	Third, coverage tracks CI width: at $\eta=1$ it falls well below
+	nominal at all durations ($0.10$--$0.34$), while at $\eta=0.01$
+	it recovers $0.86$ at $1$\,month but stalls at $0.61$--$0.67$ at
+	longer durations, indicating that aggressive tempering alone cannot
+	fully compensate for the model's smooth-spline bias.
+
+	The vertical dotted line marks the choice $\eta=0.5$ used in
+	Section~\ref{subsec:lisa}. This value gives a practical
+	compromise: credible bands are meaningfully wide at all three
+	durations while the point estimate remains accurate throughout.
+	Reaching nominal coverage would require yet smaller $\eta$ or a
+	more flexible model (e.g.\ adaptive coarse-graining near the TDI
+	nulls). We leave this to future work.
 
 	% \input{appdx}
 

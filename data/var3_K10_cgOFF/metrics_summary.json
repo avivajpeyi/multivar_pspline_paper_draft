@@ -1,0 +1,23 @@
+{
+  "N": 16384,
+  "Nb": 4,
+  "Nh": "OFF",
+  "ciw_coh_offdiag_max": 0.15923435986042023,
+  "ciw_coh_offdiag_mean": 0.037804671767735464,
+  "ciw_coh_offdiag_median": 0.03507588803768158,
+  "ciw_psd_diag_max": 0.7740573014159438,
+  "ciw_psd_diag_mean": 0.06725568140055943,
+  "ciw_psd_diag_median": 0.04394146809055244,
+  "ciw_psd_offdiag_max": 0.758852241463345,
+  "ciw_psd_offdiag_mean": 0.054020616623224445,
+  "ciw_psd_offdiag_median": 0.04137067311363514,
+  "coarse_grain_enabled": false,
+  "coverage": 0.6035698784722222,
+  "ess_median": 17282.575,
+  "lnz": -31977.97721160286,
+  "lnz_err": 0.2812038828411729,
+  "mode": "large",
+  "riae_matrix": 0.13194470488263793,
+  "runtime": 3.5849411487579346,
+  "seed": 0
+}
