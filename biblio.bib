@@ -3157,41 +3157,70 @@
 % Software / dataset stubs --- VERIFY URL, version, and authors before submission.
 % ---------------------------------------------------------------------------
 
-@misc{lisainstrument,
-	title        = {{LISA Instrument}: a {LISA} hardware simulation library},
-	author       = {Bayle, Jean-Baptiste and Hartwig, Olaf and Inchausp{\'e}, Hubert and others},
-	year         = 2024,
-	howpublished = {Software, \url{https://gitlab.in2p3.fr/lisa-simulation/instrument}},
-	note         = {VERIFY: confirm authors, version, and DOI of the LISA Instrument release used}
+@software{lisainstrument,
+  author       = {Bayle, Jean-Baptiste and
+                  Hartwig, Olaf and
+                  Staab, Martin},
+  title        = {LISA Instrument},
+  month        = sep,
+  year         = 2024,
+  publisher    = {Zenodo},
+  version      = {1.7.1},
+  doi          = {10.5281/zenodo.13809621},
+  url          = {https://doi.org/10.5281/zenodo.13809621},
 }
 
-@misc{pytdi,
-	title        = {{PyTDI}: a {Python} library for time-delay interferometry},
-	author       = {Staab, Martin and Bayle, Jean-Baptiste and others},
-	year         = 2024,
-	howpublished = {Software, \url{https://gitlab.in2p3.fr/lisa-simulation/pytdi}},
-	note         = {VERIFY: confirm authors, version, and DOI of the PyTDI release used}
+
+@software{pytdi,
+  author       = {Staab, Martin and
+                  Bayle, Jean-Baptiste and
+                  Hartwig, Olaf},
+  title        = {PyTDI},
+  month        = jul,
+  year         = 2022,
+  publisher    = {Zenodo},
+  version      = {1.2.1},
+  doi          = {10.5281/zenodo.6867012},
+  url          = {https://doi.org/10.5281/zenodo.6867012},
 }
 
-@misc{ldcspritz,
-	title        = {{LDC} {Spritz} noise model},
-	author       = {{LISA Data Challenge Working Group}},
-	year         = 2023,
-	howpublished = {LISA Data Challenge \texttt{Spritz} dataset specification},
-	note         = {VERIFY: replace with the official LDC publication or technical note for the Spritz challenge}
+@dataset{ldcspritz,
+  author       = {Le Jeune, Maude and
+                  Babak, Stanislav and
+                  Baghi, Quentin and
+                  Bayle, Jean-Baptiste and
+                  Castelli, Eleonora and
+                  Korsakova, Natalia},
+  title        = {LISA Data Challenge Spritz (LDC2b)},
+  month        = dec,
+  year         = 2022,
+  publisher    = {Zenodo},
+  version      = {v2},
+  doi          = {10.5281/zenodo.7436568},
+  url          = {https://doi.org/10.5281/zenodo.7436568},
 }
 
-@misc{zenodoLisaDataset,
-	title        = {Simulated {LISA} {TDI} \(X_2 Y_2 Z_2\) noise dataset},
-	author       = {Bayle, Jean-Baptiste and others},
-	year         = 2024,
-	howpublished = {Zenodo dataset},
-	note         = {VERIFY: insert Zenodo DOI and full author list for the released dataset}
+@dataset{lisa_noise4a,
+  author       = {Bayle, Jean-Baptiste},
+  title        = {LISA SGWB Dataset (noise-4a)},
+  month        = jun,
+  year         = 2025,
+  publisher    = {Zenodo},
+  version      = {1.0.0},
+  doi          = {10.5281/zenodo.15698080},
+  url          = {https://doi.org/10.5281/zenodo.15698080},
 }
 
-% ---------------------------------------------------------------------------
-% Additional citations supplied by the user (April 2026 round).
-% ---------------------------------------------------------------------------
+@dataset{lisa_noise5a,
+  author       = {Bayle, Jean-Baptiste},
+  title        = {LISA SGWB Dataset (noise-5a)},
+  month        = may,
+  year         = 2026,
+  publisher    = {Zenodo},
+  version      = {1.0.0},
+  doi          = {TODO},
+  url          = {TODO},
+}
 
 @article{aimen2026lisa,
 	title        = {Bayesian power spectral density estimation for {LISA} noise based on penalized splines with a parametric boost},

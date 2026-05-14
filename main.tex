@@ -70,14 +70,18 @@
 		Inference proceeds under a blocked, coarse-grained Whittle likelihood
 		with safe-Bayes $\eta$-tempering to stabilise posterior calibration, and
 		is performed with the No-U-Turn Sampler initialised from draws of a
-		stochastic variational approximation. The approach scales linearly with
-		the number of frequencies and basis functions. On synthetic VAR(2)
+		stochastic variational approximation. Each likelihood evaluation
+		scales linearly with the number of frequencies and basis functions,
+		and quadratically with the number of channels. On synthetic VAR(2)
 		benchmarks with known ground truth, the method accurately recovers
 		diagonal and cross-spectral structure, attains near-nominal coverage, and
 		achieves low relative integrated absolute error (RIAE) that improves with
 		sample size and is robust across a broad range of spline basis sizes. We
 		illustrate the relevance to LISA by estimating the multichannel noise
-		spectral matrix for time-delay interferometry combinations.
+		spectral matrix for time-delay interferometry combinations, and
+		demonstrate that AET-restricted models fail on realistic asymmetric
+		LISA noise by an order of magnitude in relative integrated absolute
+		error.
 	\end{abstract}
 
 	\keywords{gravitational waves, PSD estimation, CSD estimation, P-splines, LISA}
@@ -90,8 +94,8 @@
 	gravitational-wave (GW) data analysis: search, parameter estimation, and
 	stochastic-background inference all require a reliable noise model across
 	the detector band. For LIGO and Virgo, parametric models augmented with
-	spline components --- most notably BayesLine \citep{littenberg_bayesian_2015} --- are widely used.
-	The space-based detector LISA \citep{Amaro-SeoanePau2017LISA} poses a harder problem: its three
+	spline components, most notably BayesLine~\citep{littenberg_bayesian_2015}, are widely used.
+	The space-based detector LISA~\citep{Amaro-SeoanePau2017LISA} poses a harder problem: its three
 	time-delay interferometry (TDI) channels are correlated, and their noise
 	properties vary smoothly but non-trivially across the millihertz band.
 	A single-channel noise model cannot capture the cross-spectral correlations
@@ -126,12 +130,14 @@
 	These univariate approaches model each channel independently. This is
 	justified in the idealised equal-arm stationary LISA configuration, which
 	has vanishing off-diagonal cross-spectra between the three TDI channels,
-	but realistic noise --- unequal arm lengths, per-MOSA imbalance, and
-	instrumental breathing \citep{muratore2021instrumental} --- generates
+	but realistic noise (unequal arm lengths, per-MOSA imbalance, and
+	instrumental breathing~\citep{muratore2021instrumental}) generates
 	non-trivial off-diagonal entries in the $3\times 3$ spectral density
-	matrix $\S(f)$. Treating these cross-spectra as zero when they are not
+	matrix $\S(f)$, whose normalised magnitudes (the channel-pair
+	coherences) quantify the cross-channel correlation that
+	single-channel models discard. Treating these cross-spectra as zero when they are not
 	can degrade sensitivity to stochastic GW backgrounds and bias parameter
-	estimation \citep{PhysRevD.110.104060,PhysRevD.107.123531}.
+	estimation~\citep{PhysRevD.110.104060,PhysRevD.107.123531}.
 	Any extension of univariate methods to nonparametrically model $\S(f)$
 	needs to ensure Hermitian positive definiteness
 	at every frequency while allowing each matrix element to vary smoothly
@@ -139,7 +145,7 @@
 
     Existing nonparametric treatments of LISA TDI spectral matrices take two
     main routes. Muratore, Gair and Speri~\citep{PhysRevD.109.042001} model
-    the auto-spectra and the real and imaginary parts of the co-spectra of
+    the diagonal PSDs and the real and imaginary parts of the cross-spectra of
     $\S(f)$ separately using natural cubic splines. This is flexible, but does
     not by itself guarantee that the assembled matrix is positive definite.
     A more structured alternative starts from the six single-link
@@ -155,7 +161,7 @@
 	In this paper, we model the PSD matrix of the XYZ TDI variables directly by extending the Bayesian P-spline PSD framework
 	\citep{maturana-russel_bayesian_2021} to the multivariate $p$-dimensional
 	setting. We parametrise $\S(f)^{-1}$ through its Cholesky
-	decomposition \citep{RosenOri2007Aeom, Hu2023}, which factorises the
+	decomposition~\citep{RosenOri2007Aeom, Hu2023}, which factorises the
 	posterior density into $p$ independent components that can be
 	sampled in parallel and guarantees the Hermitian positive definiteness
 	condition.
@@ -181,8 +187,10 @@
 	\section{Multivariate P-splines}\label{sec:psplines}
 
 	\subsection{Likelihood}
-	A glossary of the notation used in this section is provided in
-	Table~\ref{tab:definitions} (Appendix~\ref{app:notation}). Let
+	A glossary of the symbols used throughout this paper is provided in
+	Table~\ref{tab:definitions} (Appendix~\ref{app:notation}). Readers
+	may find it useful to keep this table open while reading the rest of
+	this section. Let
 	$\Z=(\Z_{1},\ldots,\Z_{n})^{\intercal}\in \mathbb{R}^{n\times p}$ be a
 	$p$-dimensional stationary, mean-zero time series sampled at intervals
 	$\Delta_{t}=1/(2f_{Ny})$, so that $\Z_{\nu}=\Z(\nu\Delta_{t})$ for
@@ -216,6 +224,20 @@
 	where $\d(f_{k})^{*}$ denotes the conjugate transpose of $\d(f_{k})$ and
 	$\S(f_{k})$ is a Hermitian positive semidefinite matrix.
 
+	The diagonal entries $S_{ii}(f)$ are the power spectral densities (PSDs) of channel $i$,
+	while the off-diagonals $S_{ij}(f)$ for $i\neq j$ are the (complex)
+	cross-spectra. A scale-free summary of the linear dependence between
+	channels $i$ and $j$ at frequency $f$ is the complex coherence,
+	\begin{align}
+		\label{eq:coherence}
+		C_{ij}(f) \;=\; \frac{S_{ij}(f)}{\sqrt{S_{ii}(f)\,S_{jj}(f)}},
+		\qquad |C_{ij}(f)|\in[0,1],
+	\end{align}
+	whose magnitude is zero when channels $i$ and $j$ are uncorrelated at
+	frequency $f$ and unity when they are perfectly linearly related.
+	We use $|C_{ij}(f)|$ to visualise off-diagonal recovery in
+	Sec.~\ref{sec:application}.
+
 	\paragraph*{Blocking.}
 	To trade frequency resolution for periodogram stability we partition
 	$\Z$ into $N_{b}$ equal, non-overlapping blocks
@@ -223,12 +245,12 @@
 	and containing $n/N_{b}$ samples (illustrated in
 	Fig.~\ref{fig:blocked_likelihood})\footnote{Each block may be
 	tapered by a window function $w_{t}$ before the DFT to suppress
-	spectral leakage, in which case the block periodogram is rescaled
-	by the inverse effective noise bandwidth $\mathrm{ENBW}=
-	n_{b}\sum_{t}w_{t}^{2}/(\sum_{t}w_{t})^{2}$ (with $n_{b}=n/N_{b}$),
-	so that the complex-Wishart mean of $\Y(f_{k})$ remains
-	$T_{b}\,\S(f_{k})$ and Eqs.~\eqref{eq:blocked-trace}--\eqref{eq:log-like}
-	apply unchanged.}.
+	spectral leakage. In that case the block periodogram is rescaled by
+	the inverse effective noise bandwidth
+	$\mathrm{ENBW}=n_{b}\sum_{t}w_{t}^{2}/(\sum_{t}w_{t})^{2}$ (with
+	$n_{b}=n/N_{b}$), so that the complex-Wishart mean of $\Y(f_{k})$
+	remains $T_{b}\,\S(f_{k})$ and
+	Eqs.~\eqref{eq:blocked-trace}--\eqref{eq:log-like} apply unchanged.}.
 	Denoting the DFT of block $i$ by
 	$\d^{(i)}$, and assuming blocks are approximately independent under
 	stationarity, the blocked Whittle likelihood factorises as
@@ -348,7 +370,7 @@
 
 
 	\subsection{Parametrisation using the Cholesky Decomposition}
-	Following \citet{RosenOri2007Aeom,Hu2023}, we parametrise the
+	Following~\citet{RosenOri2007Aeom,Hu2023}, we parametrise the
 	\emph{inverse} spectral density matrix through its Cholesky decomposition.
 	Working with $\S^{-1}$ rather than $\S$ is what makes the problem
 	tractable: the quadratic form $\u^{*}\S^{-1}\u$ splits into a sum of $p$
@@ -498,10 +520,13 @@
 	corresponding spline coefficients.
 
 	Knots are placed adaptively following
-	\citet{maturana-russel_bayesian_2021}: the absolute-valued empirical periodogram
-	for each Cholesky component is normalised to a probability mass function
-	over frequency, and knots are positioned at equally-spaced quantiles of
-	its cumulative distribution. Knots therefore cluster where the Cholesky component 
+	\citet{maturana-russel_bayesian_2021}: for each Cholesky component the
+	absolute-valued empirical periodogram is normalised to a probability
+	mass function over frequency, and knots are positioned at
+	equally-spaced quantiles of its cumulative distribution. For the
+	off-diagonal entries the real and imaginary parts are treated as
+	separate components, with knots placed independently on
+	$|\Re[\theta_{jl}(f_{k})]|$ and $|\Im[\theta_{jl}(f_{k})]|$. Knots therefore cluster where the Cholesky component 
 	varies rapidly and spread out in smooth regions, with no manual tuning.
 
 	Each component $j$ has its own penalty matrix $\bold{P}_{j}$ with
@@ -512,11 +537,25 @@
 	\end{equation}
 	Unlike the finite-difference approximation
 	$\bold{D}_{2}^{\top}\bold{D}_{2}$ used in the original P-spline
-	formulation of \citet{EilersMarx1996}, this integral form is exact for
+	formulation of~\citet{EilersMarx1996}, this integral form is exact for
 	non-uniform knot sequences~\citep{Wand2008}.
 
 	\subsection{Bayesian Inference}
 	\label{sec:bayesian-inference}
+	The full inference workflow proceeds in four stages. First, we place
+	hierarchical smoothing priors on the spline coefficients of every
+	Cholesky component. Second, we combine these priors with the
+	$\eta$-tempered, blocked, coarse-grained Whittle likelihood
+	(Eq.~\ref{eq:eta-tempered}) using the per-channel factorisation of
+	Eq.~\eqref{eq:likelihood}. Third, we warm-start each MCMC chain from
+	a draw of a stochastic variational approximation to the posterior, to
+	bypass the expensive NUTS adaptation in low-mass-curvature regions.
+	Fourth, we sample the warm-started posterior with NUTS and assess
+	convergence with standard chain diagnostics. The first two stages
+	are described below, and the remaining two stages are described in
+	the \emph{Implementation} and \emph{Convergence diagnostics}
+	paragraphs that follow.
+
 	We place hierarchical priors on the spline coefficients to enforce smoothness.
 	For each component $j$:
 	\begin{align}
@@ -535,7 +574,7 @@
 	Combining the $\eta$-tempered likelihood
 	(Eq.~\ref{eq:eta-tempered}) with these priors and the Cholesky
 	factorisation of $\S^{-1}$, the posterior is sampled using the No-U-Turn
-	Sampler \citep[NUTS;][]{hoffman2014_NUTS}. The Cholesky parametrisation
+	Sampler~\citep[NUTS;][]{hoffman2014_NUTS}. The Cholesky parametrisation
 	guarantees Hermitian positive definiteness of $\widehat{\S}(f)$ at every
 	frequency by construction.
 
@@ -734,8 +773,9 @@
 			coverage $88\%$, SVI: $\mathrm{RIAE}=0.102$, 90\% CI coverage $83\%$). Each panel shows the raw periodogram (grey), the theoretical
 			spectrum (dotted black), and posterior medians with 90\% credible bands for NUTS
 			(blue) and SVI (orange). Diagonal panels ($S_{11}$, $S_{22}$, $S_{33}$) show
-			the power spectral densities, while the off-diagonal panels show real and imaginary
-			parts of the cross-spectra.
+			the power spectral densities, while the off-diagonal panels show the real and imaginary
+			parts of the cross-spectra on a linear vertical scale (the VAR(2) PSDs span less
+			than one decade, so all panels share a linear scale).
 		}
 		\label{fig:vi_vs_nuts_var3}
 	\end{figure}
@@ -746,9 +786,9 @@
 	We apply the multivariate P-spline model to the three second-generation
 	time-delay interferometry (TDI) Michelson channels $X_{2}$, $Y_{2}$,
 	$Z_{2}$ from a publicly released LISA TDI dataset
-	\citep{zenodoLisaDataset}. The data were generated with
-	\texttt{lisainstrument} \citep{bayle2024lisainstrument} under the LDC Spritz
-	noise model \citep{ldcspritz} at a sampling rate of
+	\citep{lisa_noise4a, lisa_noise5a}. The data were generated with
+	\texttt{lisainstrument}~\citep{bayle2024lisainstrument} under the LDC Spritz
+	noise model~\citep{ldcspritz} at a sampling rate of
 	$f_{s}=0.5$\,Hz and constant $8.3$\,s light travel times. The six
 	inter-spacecraft interferometer (ISI) and test-mass (TM) link
 	measurements were propagated through \texttt{pytdi}
@@ -812,7 +852,8 @@
 	described in Section~\ref{sec:psplines} so that more knots fall near
 	the steep low-frequency rise. We choose $N_{b}$ to give blocks of
 	order one week in length, and a fixed safe-Bayes tempering
-	$\eta=0.5$. Each block is tapered with a Tukey window
+	$\eta=0.5$ (justified by the sensitivity sweep in
+	Appendix~\ref{app:eta_sweep}). Each block is tapered with a Tukey window
 	(shape parameter $\alpha=0.1$, $\mathrm{ENBW}\approx1.04$) before
 	computing the DFT to suppress spectral leakage. The three TDI
 	transfer-function nulls at $0.030$, $0.060$, and $0.090$\,Hz are
@@ -821,8 +862,10 @@
 
 	Table~\ref{tab:lisa_results} summarises convergence and CI-width
 	diagnostics for the two models, two datasets, and three observation
-	durations. All twelve runs converge cleanly ($\hat R<1.01$, no
-	problematic divergences). The results split sharply along the
+	durations. All twelve LISA runs satisfy the convergence diagnostics of
+	Section~\ref{sec:bayesian-inference}: $\hat R<1.01$ for all parameters,
+	bulk and tail ESS exceeding $400$, E-BFMI~$>0.3$, and no problematic
+	divergent transitions or tree-depth saturation. The results split sharply along the
 	AET-diagonalisation hypothesis.
 
 	\emph{Symmetric noise (\texttt{noise4a}).} Both models recover the
@@ -872,7 +915,7 @@
 			ASDs for \texttt{noise5a}). $\Delta_{\rm PSD}$ is the
 			median over frequencies of the pointwise relative width
 			$[\hat{S}^{95\%}(f)-\hat{S}^{5\%}(f)]/\hat{S}^{50\%}(f)$
-			of the 90\% credible band on the diagonal auto-spectra
+			of the 90\% credible band on the diagonal PSDs
 			(computed in the XYZ basis for both models). Runtime is
 			wall-clock seconds for one full SVI+NUTS pipeline run on a
 			single 4-core CPU node.}
@@ -908,22 +951,36 @@
 			safe-Bayes tempering $\eta=0.5$, shown at three observation
 			durations: $1$ month (blue), $6$ months (orange), and $12$
 			months (green). Diagonal panels show the posterior $90\%$
-			credible bands for the auto-spectra
+			credible bands for the diagonal PSDs
 			$S_{XX},S_{YY},S_{ZZ}$. Lower-triangle panels show the
-			coherence $|C_{ij}(f)|$ for each pair. Welch reference
+			coherence $|C_{ij}(f)|$ (Eq.~\ref{eq:coherence}) for each pair. Welch reference
 			(grey) is overplotted.}
 		\label{fig:lisa_eta0p5}
 	\end{figure*}
 
 	Figure~\ref{fig:lisa_eta0p5} overlays the three durations for both
 	datasets under the $\mathcal{H}_{XYZ}$ model. The diagonal
-	auto-spectra are recovered with sub-percent bias and CI widths that
-	contract with $\sqrt{T}$, while the off-diagonal coherences --- the
+	diagonal PSDs are recovered with sub-percent bias and CI widths that
+	contract with $\sqrt{T}$, while the off-diagonal coherences (the
 	cross-channel quantities most directly tied to
 	stochastic-background and parameter-estimation
-	pipelines~\citep{katz2024globalfit} --- are resolved at the
+	pipelines~\citep{katz2024globalfit}) are resolved at the
 	few-percent level by 6 months and tightened by a further factor of
-	$\sim 1.7$ at 1 year. Wall-clock runtime grows much more slowly
+	$\sim 1.7$ at 1 year. A localised feature visible in all three
+	off-diagonal panels of Fig.~\ref{fig:lisa_eta0p5} is a cluster of
+	small-amplitude wiggles in the posterior-median coherence near the
+	TDI transfer-function null at $\approx 0.06$\,Hz (and, more weakly,
+	near $0.03$ and $0.09$\,Hz). These arise because the diagonal PSDs
+	$S_{ii}(f)$ drop by several orders of magnitude across each null,
+	and the P-spline basis --- which is smooth on a log scale but
+	agnostic to the location and shape of the dips --- has to absorb
+	this dynamic range from the data alone. Small residual misfits at
+	the bottoms of the dips are amplified in the coherence, producing
+	the visible ripple. Incorporating the analytic TDI transfer
+	functions directly into the prior mean (rather than only excising
+	a $1$\,mHz window around each null) may be a natural way to
+	suppress this artefact and is left for future work.
+	Wall-clock runtime grows much more slowly
 	than the data volume: a $12\times$ increase in mission duration
 	($1$\,mo $\to 1$\,yr) costs only a $\sim\!7\times$ increase in
 	wall time for $\mathcal{H}_{XYZ}$. The 1-month and 6-month fits
@@ -958,7 +1015,7 @@
 	On the synthetic 3D VAR(2) benchmark the un-tempered estimator
 	($\eta=1$) achieves coverage $\approx\!0.91$ at every $(N_{b},N_{h})$
 	configuration tested. On the LISA TDI data the same un-tempered
-	estimator over-concentrates; a fixed safe-Bayes tempering $\eta=0.5$
+	estimator over-concentrates. A fixed safe-Bayes tempering $\eta=0.5$
 	recovers credible bands that contract with $\sqrt{T}$ and remain
 	well-behaved across all three observation durations
 	(Appendix~\ref{app:eta_sweep}).
@@ -1039,7 +1096,7 @@
 	the spline-weight priors on the variational mean, with the
 	variational scale informing the prior width. The trade-off is that
 	this makes the prior data-dependent and informative, which is
-	undesirable when calibration of the final posterior is the goal; we
+	undesirable when calibration of the final posterior is the goal. We
 	flag it as a direction worth exploring rather than recommend it.
 
 	\paragraph{Other extensions.}
@@ -1061,7 +1118,7 @@
 	Installation instructions and dependency information (tested on Python~$\geq 3.10$) are provided in the repository \texttt{README}. 
 	The software is released under the MIT License, permitting free use, modification, and distribution. 
 	The datasets generated are available at the public Zenodo repository.
-	LISA time series data is available at~\citep{zenodoLisaDataset}. 
+	LISA time series data is available at~\citep{lisa_noise4a, lisa_noise5a}. 
 
 
 	\begin{acknowledgments}
@@ -1101,9 +1158,9 @@
 	This appendix benchmarks the proposed estimator against the bivariate
 	Bayesian baselines available in the literature on a controlled VAR(2)
 	problem with closed-form ground truth.
-	Following \citet{Liu2023}, we simulate 500 independent realisations of a bivariate
+	Following~\citet{Liu2023}, we simulate 500 independent realisations of a bivariate
 	time series from a vector autoregressive model of order 2, VAR(2), using three different
-	sample sizes $n=256,512,1024$ (refer to \citet[Section~4.2,][]{Liu2023} for the
+	sample sizes $n=256,512,1024$ (refer to~\citet[Section~4.2,][]{Liu2023} for the
 	definitions of the VAR(2) models). The spectral densities are estimated using
 	the multivariate P-spline method with $K=16$ basis functions and cubic splines
 	($d=3$) for each spectral component. We validate the multivariate P-spline method
@@ -1111,7 +1168,7 @@
 	spectral properties. The theoretical spectral density matrix provides exact
 	ground truth for comparison. To benchmark against existing Bayesian multivariate
 	spectral estimators, we compare to the variational Bayes (VB) and variational
-	nonparametric correction (VNPC) methods of \citet{Liu2023} using the same
+	nonparametric correction (VNPC) methods of~\citet{Liu2023} using the same
 	$L_{2}$ error criterion. The $L_{2}$ error is the un-normalised
 	counterpart of the matrix RIAE used in the main text: it is the
 	Frobenius-norm integrated absolute error of the posterior-median
@@ -1130,7 +1187,7 @@
 	\begin{table}[!t]
     \centering
     \caption{Bivariate VAR(2) benchmark using the $L_{2}$ error metric from
-    \citet{Liu2023}. Entries are mean $\pm$ standard deviation over 500
+   ~\citet{Liu2023}. Entries are mean $\pm$ standard deviation over 500
     independent realisations. Smaller values are better.}
     \label{tab:var2_l2_results}
     \setlength{\tabcolsep}{10pt}

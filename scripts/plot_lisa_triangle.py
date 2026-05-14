@@ -162,7 +162,7 @@ def _panel_math_label(i: int, j: int) -> str:
     if i == j:
         ch = CHANNELS[i]
         return rf"$S_{{{ch}{ch}}}$"
-    return rf"$C_{{{CHANNELS[i]}{CHANNELS[j]}}}$"
+    return rf"$|C_{{{CHANNELS[i]}{CHANNELS[j]}}}|$"
 
 
 def _set_psd_axis_limits(ax: plt.Axes, values: list[np.ndarray]) -> None:
@@ -350,7 +350,7 @@ def plot_triangle(bundle: dict[str, object], out_path: Path) -> None:
             else:
                 ax.set_ylim(-0.01, 1.0)
                 if j == 0:
-                    ax.set_ylabel("Coherence")
+                    ax.set_ylabel(r"$|C_{ij}(f)|$")
 
             ax.text(
                 0.04,
