@@ -43,24 +43,30 @@ FMIN_PLOT = 1e-4
 FMAX_PLOT = 1e-1
 PSD_FLOOR = 1e-50
 FIG_DPI = 300
+FIGSIZE = (7.2, 6.2)
 
 POSTERIOR_FILL_ALPHA = 0.26
 POSTERIOR_FILL_ALPHA_PSD = 0.34
 WELCH_COLOR = "0.65"
 WELCH_ALPHA = 0.6
-WELCH_WIDTH = 0.8
+WELCH_WIDTH = 1.05
 WELCH_LINESTYLE = (0, (3, 2))  # short dashed
 LABEL_FONT_SIZE = 15
 
 
 plt.rcParams.update(
     {
-        "font.size": 11,
+        "font.size": 12,
         "axes.titlesize": 13,
-        "axes.labelsize": 12,
-        "legend.fontsize": 10,
+        "axes.labelsize": 11,
+        "axes.linewidth": 0.9,
+        "legend.fontsize": 11,
         "xtick.labelsize": 10,
         "ytick.labelsize": 10,
+        "xtick.major.size": 3.5,
+        "ytick.major.size": 3.5,
+        "xtick.major.width": 0.8,
+        "ytick.major.width": 0.8,
     }
 )
 
@@ -255,7 +261,7 @@ def plot_triangle(bundle: dict[str, object], out_path: Path) -> None:
     coh_welch_matrix = np.asarray(bundle["coh_welch_matrix"])
     runs = bundle["runs"]
 
-    fig, axes = plt.subplots(3, 3, figsize=(9.8, 8.4), constrained_layout=False)
+    fig, axes = plt.subplots(3, 3, figsize=FIGSIZE, constrained_layout=False)
 
     for i in range(3):
         for j in range(3):
@@ -321,8 +327,8 @@ def plot_triangle(bundle: dict[str, object], out_path: Path) -> None:
                     )
 
             ax.set_xlim(FMIN_PLOT, FMAX_PLOT)
-            ax.grid(True, which="major", ls=":", alpha=0.35)
-            ax.grid(True, which="minor", ls=":", alpha=0.18)
+            ax.grid(True, which="major", ls=":", alpha=0.28, lw=0.6)
+            ax.grid(False, which="minor")
 
             if is_psd:
                 _set_psd_axis_limits(
@@ -339,10 +345,12 @@ def plot_triangle(bundle: dict[str, object], out_path: Path) -> None:
                         ],
                     ],
                 )
-                ax.set_ylabel("PSD [1/Hz]")
+                if j == 0:
+                    ax.set_ylabel("PSD [1/Hz]")
             else:
                 ax.set_ylim(-0.01, 1.0)
-                ax.set_ylabel("Coherence")
+                if j == 0:
+                    ax.set_ylabel("Coherence")
 
             ax.text(
                 0.04,
@@ -368,9 +376,9 @@ def plot_triangle(bundle: dict[str, object], out_path: Path) -> None:
         columnspacing=0.9,
         handlelength=2.2,
         handletextpad=0.6,
-        fontsize=10,
+        fontsize=11,
     )
-    fig.tight_layout(rect=(0.0, 0.0, 1.0, 1.0), h_pad=0.55, w_pad=0.65)
+    fig.tight_layout(rect=(0.0, 0.0, 1.0, 1.0), h_pad=0.45, w_pad=0.45)
     fig.savefig(out_path, dpi=FIG_DPI, bbox_inches="tight")
     plt.close(fig)
 
@@ -388,7 +396,7 @@ def parse_args() -> argparse.Namespace:
         "--outdir",
         type=Path,
         default=Path("."),
-        help="Directory for output PNG files",
+        help="Directory for output PDF files",
     )
     parser.add_argument(
         "--noise",
@@ -409,7 +417,7 @@ def main() -> None:
         bundle = _load_bundle(args.input, noise_name)
         eta_label = str(bundle["eta"]).replace(".", "p")
         noise_tag = noise_name.replace("_", "")
-        out_path = args.outdir / f"triangle_{noise_tag}_{eta_label}.png"
+        out_path = args.outdir / f"triangle_{noise_tag}_{eta_label}.pdf"
         plot_triangle(bundle, out_path)
         print(f"Saved {out_path}")
 

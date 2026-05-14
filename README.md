@@ -12,7 +12,7 @@ docs/manuscript/
 │   blocked_likelihood_tikz.tex, biblio.bib    # LaTeX source
 ├── build.sh                                   # tectonic main.tex -> build/main.pdf
 ├── requirements.txt                           # Python deps for the plotting scripts
-├── figures/                                   # PNG/PDF files loaded by main.tex
+├── figures/                                   # PDF files loaded by main.tex
 └── scripts/
     ├── make_figures.sh                        # one-shot driver for all figures
     ├── 3D/
@@ -38,8 +38,8 @@ This writes:
 
 | Figure | Output |
 | --- | --- |
-| Fig. 2 (`vi_vs_nuts_var3`) | `figures/vi_vs_nuts_var3.png` |
-| Fig. 3 (`triangle_noise{4a,5a}_eta0p5`) | `figures/triangle_noise4a_eta0p5.png`, `figures/triangle_noise5a_eta0p5.png` |
+| Fig. 2 (`vi_vs_nuts_var3`) | `figures/vi_vs_nuts_var3.pdf` |
+| Fig. 3 (`triangle_noise{4a,5a}_eta0p5`) | `figures/triangle_noise4a_eta0p5.pdf`, `figures/triangle_noise5a_eta0p5.pdf` |
 | Fig. 4 (`lisa_eta_sweep`) | `figures/lisa_eta_sweep.pdf` |
 
 Fig. 1 is inline TikZ (`blocked_likelihood_tikz.tex`) and is rendered by

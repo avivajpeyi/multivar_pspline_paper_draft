@@ -21,12 +21,16 @@ OUT = HERE.parent / "figures" / "lisa_eta_sweep.pdf"
 
 plt.rcParams.update(
     {
-        "font.size": 11,
-        "axes.titlesize": 13,
-        "axes.labelsize": 12,
-        "legend.fontsize": 10,
-        "xtick.labelsize": 10,
-        "ytick.labelsize": 10,
+        "font.size": 8,
+        "axes.labelsize": 8,
+        "legend.fontsize": 7.5,
+        "xtick.labelsize": 7.5,
+        "ytick.labelsize": 7.5,
+        "axes.linewidth": 0.8,
+        "xtick.major.width": 0.8,
+        "ytick.major.width": 0.8,
+        "xtick.minor.width": 0.6,
+        "ytick.minor.width": 0.6,
     }
 )
 
@@ -39,7 +43,13 @@ labels = {"1m": "1 month", "6m": "6 months", "1y": "1 year"}
 
 ETA_CHOSEN = 0.5
 
-fig, axes = plt.subplots(1, 2, figsize=(6.6, 3.2))
+fig, axes = plt.subplots(
+    2,
+    1,
+    figsize=(3.25, 4.15),
+    sharex=True,
+    constrained_layout=True,
+)
 
 panels = [
     ("ci_width_rel_psd_diag_median", "Median rel. CI width\n(diag. PSD)"),
@@ -52,12 +62,12 @@ for ax, (col, ylabel) in zip(axes, panels):
         ax.plot(
             sub["eta_value"], sub[col],
             "-o", color=colors[dur], label=labels[dur],
-            markersize=5, linewidth=1.6,
+            markersize=3.7, linewidth=1.1,
         )
 
-    ax.axvline(ETA_CHOSEN, color="0.55", linestyle=":", linewidth=1.0, zorder=0)
+    ax.axvline(ETA_CHOSEN, color="0.55", linestyle=":", linewidth=0.8, zorder=0)
     ax.set_xscale("log")
-    ax.set_xlabel(r"$\eta$")
+    # ax.set_xlabel(r"$\eta$")
     ax.set_ylabel(ylabel)
     ax.set_xticks([0.01, 0.1, 1.0])
     ax.xaxis.set_major_formatter(
@@ -74,9 +84,8 @@ axes[1].set_ylim(riae_lo - pad, riae_hi + pad)
 axes[1].yaxis.set_major_locator(mticker.MaxNLocator(nbins=4))
 axes[1].yaxis.set_major_formatter(mticker.FormatStrFormatter("%.4f"))
 
-axes[0].legend(loc="upper right", frameon=False)
+axes[0].legend(loc="upper right", frameon=False, handlelength=2.0)
 
-fig.tight_layout(pad=0.7, w_pad=1.2)
 OUT.parent.mkdir(parents=True, exist_ok=True)
-fig.savefig(OUT, bbox_inches="tight", dpi=300)
+fig.savefig(OUT, dpi=300)
 print(f"wrote {OUT}")

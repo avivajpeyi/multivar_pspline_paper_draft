@@ -36,6 +36,10 @@ package-lock.json
 *.ps
 build/
 
+# Manuscript figure PDFs are source artifacts used by main.tex.
+!figures/
+!figures/*.pdf
+
 # Python
 __pycache__/
 *.py[cod]

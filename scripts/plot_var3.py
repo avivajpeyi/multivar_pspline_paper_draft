@@ -194,7 +194,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output",
         type=str,
-        default="var3_simulation_idata_overlay.png",
+        default="var3_simulation_idata_overlay.pdf",
         help="Output figure path.",
     )
     parser.add_argument(
@@ -704,10 +704,6 @@ def _plot_vi_vs_nuts_overlay(
 
     fig.tight_layout(h_pad=0.55, w_pad=0.65, rect=(0.0, 0.0, 1.0, 1.0))
     fig.savefig(output_path, dpi=300, bbox_inches="tight")
-    if output_path.suffix.lower() == ".pdf":
-        fig.savefig(
-            output_path.with_suffix(".png"), dpi=220, bbox_inches="tight"
-        )
     plt.close(fig)
 
 
@@ -1073,10 +1069,6 @@ def main() -> int:
 
     # output_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output_path, dpi=220, bbox_inches="tight")
-    if output_path.suffix.lower() == ".pdf":
-        fig.savefig(
-            output_path.with_suffix(".png"), dpi=220, bbox_inches="tight"
-        )
 
     print("Loaded input files:")
     for p in idata_paths:

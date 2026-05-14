@@ -644,13 +644,21 @@
 	All other settings follow Section~\ref{sec:bayesian-inference}.
 
 	Figure~\ref{fig:vi_vs_nuts_var3} shows the full $3\times 3$ spectral
-	matrix recovered for a representative $n=16{,}384$ realisation
-	($\mathrm{RIAE}=0.114$, coverage $87\%$), with NUTS and SVI
-	posteriors overlaid. Both samplers recover the diagonal PSDs and
-	off-diagonal cross-spectra with substantially smoother posterior
-	medians than the raw periodogram. The NUTS and SVI medians are nearly
-	indistinguishable, supporting the use of the SVI posterior as a fast
-	alternative to NUTS for initial exploration.
+	matrix recovered for a representative $n=16{,}384$ realisation, with
+	the NUTS and SVI posteriors overlaid. Both samplers recover the
+	diagonal PSDs and off-diagonal cross-spectra with substantially
+	smoother posterior medians than the raw periodogram, and the two
+	posterior medians track each other closely ($\mathrm{RIAE}=0.114$
+	for NUTS versus $0.102$ for SVI). The SVI credible bands, however,
+	are visibly narrower than those of NUTS: for this realisation the
+	empirical 90\% coverage drops from $88\%$ under NUTS to $83\%$ under
+	SVI. This is the well-known under-dispersion of mean-field/low-rank
+	Gaussian variational approximations, and it is why we use SVI only
+	as a fast NUTS initialiser and retain NUTS as the production sampler
+	when calibrated credible bands are required. That said, the SVI fit
+	itself completes in a few seconds and recovers an accurate posterior
+	median, which is attractive when only a point estimate of the
+	spectrum is needed.
 
 	Table~\ref{tab:3d_var2_results} reports a representative slice of the
 	$(N_{b},N_{h})$ grid. Coverage is near-nominal (89.8--90.8\%) across
@@ -688,7 +696,11 @@
     \centering
     \setlength{\tabcolsep}{10pt}
     \begin{NiceTabular}{ccccccc}
-        \toprule
+    \CodeBefore
+        \rowcolor{gray!10}{2-7}
+        \rowcolor{gray!10}{13-16}
+        \rowcolor{gray!10}{20-21}
+    \Body
         $N_{b}$ & $N_{h}$ & $N_{c}$ & Coverage & RIAE & ESS & Runtime (s) \\
 		\midrule
 		1 & off & 8192 & $0.900 \pm 0.031$ & $0.111 \pm 0.004$ & $21,019 \pm 2726$ & $9.61 \pm 1.76$ \\
@@ -697,34 +709,29 @@
 		1 & 8 & 1024 & $0.904 \pm 0.029$ & $0.111 \pm 0.005$ & $26,640 \pm 3303$ & $8.92 \pm 1.65$ \\
 		1 & 16 & 512 & $0.908 \pm 0.029$ & $0.110 \pm 0.004$ & $25,480 \pm 3525$ & $8.81 \pm 1.62$ \\
 		1 & 32 & 256 & $0.907 \pm 0.030$ & $0.109 \pm 0.004$ & $24,011 \pm 3500$ & $8.82 \pm 1.70$ \\
-		\midrule
 		2 & off & 4096 & $0.898 \pm 0.031$ & $0.112 \pm 0.005$ & $23,938 \pm 2939$ & $9.11 \pm 1.63$ \\
 		2 & 2 & 2048 & $0.901 \pm 0.030$ & $0.112 \pm 0.005$ & $26,279 \pm 2979$ & $9.03 \pm 1.72$ \\
 		2 & 4 & 1024 & $0.904 \pm 0.030$ & $0.111 \pm 0.005$ & $26,405 \pm 3361$ & $8.89 \pm 1.67$ \\
 		2 & 8 & 512 & $0.907 \pm 0.030$ & $0.110 \pm 0.004$ & $25,726 \pm 3461$ & $8.76 \pm 1.75$ \\
 		2 & 16 & 256 & $0.907 \pm 0.031$ & $0.109 \pm 0.004$ & $23,997 \pm 3787$ & $8.81 \pm 1.69$ \\
-		\midrule
 		4 & off & 2048 & $0.901 \pm 0.030$ & $0.112 \pm 0.004$ & $26,053 \pm 2906$ & $9.05 \pm 1.71$ \\
 		4 & 2 & 1024 & $0.904 \pm 0.029$ & $0.111 \pm 0.005$ & $26,695 \pm 3221$ & $8.84 \pm 1.64$ \\
 		4 & 4 & 512 & $0.907 \pm 0.030$ & $0.110 \pm 0.004$ & $25,753 \pm 3636$ & $8.75 \pm 1.72$ \\
 		4 & 8 & 256 & $0.907 \pm 0.030$ & $0.109 \pm 0.004$ & $24,036 \pm 3622$ & $8.78 \pm 1.68$ \\
-		\midrule
 		8 & off & 1024 & $0.904 \pm 0.030$ & $0.112 \pm 0.005$ & $26,336 \pm 3190$ & $8.89 \pm 1.65$ \\
 		8 & 2 & 512 & $0.907 \pm 0.030$ & $0.111 \pm 0.005$ & $25,587 \pm 3658$ & $8.78 \pm 1.70$ \\
 		8 & 4 & 256 & $0.907 \pm 0.031$ & $0.110 \pm 0.004$ & $24,000 \pm 3787$ & $8.79 \pm 1.70$ \\
-		\midrule
 		16 & off & 512 & $0.905 \pm 0.029$ & $0.111 \pm 0.004$ & $25,504 \pm 3431$ & $8.74 \pm 1.55$ \\
 		16 & 2 & 256 & $0.907 \pm 0.030$ & $0.110 \pm 0.004$ & $23,862 \pm 3724$ & $8.84 \pm 1.68$ \\
-		\bottomrule
     \end{NiceTabular}
 	\end{table*}
 
 	\begin{figure}
 		\centering
-		\includegraphics[width=1\linewidth]{figures/vi_vs_nuts_var3.png}
+		\includegraphics[width=1\linewidth]{figures/vi_vs_nuts_var3.pdf}
 		\caption{Representative $3\times3$ spectral density matrix estimate for a
-			single $n=16{,}384$ VAR(2) realisation ($\mathrm{RIAE}=0.114$, 90\% CI
-			coverage $87\%$). Each panel shows the raw periodogram (grey), the theoretical
+			single $n=16{,}384$ VAR(2) realisation (NUTS: $\mathrm{RIAE}=0.114$, 90\% CI
+			coverage $88\%$, SVI: $\mathrm{RIAE}=0.102$, 90\% CI coverage $83\%$). Each panel shows the raw periodogram (grey), the theoretical
 			spectrum (dotted black), and posterior medians with 90\% credible bands for NUTS
 			(blue) and SVI (orange). Diagonal panels ($S_{11}$, $S_{22}$, $S_{33}$) show
 			the power spectral densities, while the off-diagonal panels show real and imaginary
@@ -769,8 +776,7 @@
 		twelve measured per-MOSA ASDs through analytic OMS/TM filter
 		shapes and projecting through PyTDI's TDI 2.0 Michelson
 		($X_{2},Y_{2},Z_{2}$) combinations to obtain the full
-		$3\times3$ XYZ covariance at every frequency (implementation:
-		\texttt{lisa\_logpspline/src/segwo.py}).
+		$3\times3$ XYZ covariance at every frequency.
 	\end{itemize}
 	We fit each dataset under two competing hypotheses for the
 	$3\times3$ noise cross-spectrum, designed to test whether the
@@ -871,30 +877,30 @@
 			wall-clock seconds for one full SVI+NUTS pipeline run on a
 			single 4-core CPU node.}
 		\label{tab:lisa_results}
-		\begin{ruledtabular}
-			\setlength{\tabcolsep}{4pt}
-			\begin{tabular}{llccccc}
-				Noise & Model & Duration & $N_{b}$ & RIAE & $\Delta_{\rm PSD}$ & Runtime \\ \hline
-				\texttt{4a} & $\mathcal{H}_{AET}$ & $1$\,mo & $4$  & $4.5\!\times\!10^{-3}$ & $4.8\%$ & $117$\,s \\
-				\texttt{4a} & $\mathcal{H}_{AET}$ & $6$\,mo & $25$ & $4.7\!\times\!10^{-3}$ & $1.9\%$ & $224$\,s \\
-				\texttt{4a} & $\mathcal{H}_{AET}$ & $1$\,yr & $52$ & $4.4\!\times\!10^{-3}$ & $1.2\%$ & $632$\,s \\
-				\texttt{4a} & $\mathcal{H}_{XYZ}$      & $1$\,mo & $4$  & $4.7\!\times\!10^{-3}$ & $4.6\%$ & $119$\,s \\
-				\texttt{4a} & $\mathcal{H}_{XYZ}$      & $6$\,mo & $25$ & $5.3\!\times\!10^{-3}$ & $1.9\%$ & $181$\,s \\
-				\texttt{4a} & $\mathcal{H}_{XYZ}$      & $1$\,yr & $52$ & $5.0\!\times\!10^{-3}$ & $1.2\%$ & $853$\,s \\ \hline
-				\texttt{5a} & $\mathcal{H}_{AET}$ & $1$\,mo & $4$  & $2.2\!\times\!10^{-2}$ & $4.9\%$ & $119$\,s \\
-				\texttt{5a} & $\mathcal{H}_{AET}$ & $6$\,mo & $25$ & $1.8\!\times\!10^{-2}$ & $1.9\%$ & $218$\,s \\
-				\texttt{5a} & $\mathcal{H}_{AET}$ & $1$\,yr & $52$ & $2.2\!\times\!10^{-2}$ & $1.3\%$ & $728$\,s \\
-				\texttt{5a} & $\mathcal{H}_{XYZ}$      & $1$\,mo & $4$  & $1.1\!\times\!10^{-3}$ & $4.5\%$ & $177$\,s \\
-				\texttt{5a} & $\mathcal{H}_{XYZ}$      & $6$\,mo & $25$ & $9.8\!\times\!10^{-4}$ & $1.9\%$ & $245$\,s \\
-				\texttt{5a} & $\mathcal{H}_{XYZ}$      & $1$\,yr & $52$ & $8.6\!\times\!10^{-4}$ & $1.3\%$ & $1089$\,s \\
-			\end{tabular}
-		\end{ruledtabular}
+		\setlength{\tabcolsep}{6pt}
+		\begin{NiceTabular}{llc ccc ccc}
+		\CodeBefore
+			\rowcolor{gray!10}{3-5}
+		\Body
+			& & & \multicolumn{3}{c}{$\mathcal{H}_{AET}$} & \multicolumn{3}{c}{$\mathcal{H}_{XYZ}$} \\
+			\cmidrule(lr){4-6}\cmidrule(lr){7-9}
+			Noise & Duration & $N_{b}$ & RIAE & $\Delta_{\rm PSD}$ & $t$\,(s) & RIAE & $\Delta_{\rm PSD}$ & $t$\,(s) \\
+			\midrule
+			\multirow{3}{*}{\texttt{4a}}
+				& $1$\,mo & $4$  & $4.5\!\times\!10^{-3}$ & $4.8\%$ & $117$ & $4.7\!\times\!10^{-3}$ & $4.6\%$ & $119$ \\
+				& $6$\,mo & $25$ & $4.7\!\times\!10^{-3}$ & $1.9\%$ & $224$ & $5.3\!\times\!10^{-3}$ & $1.9\%$ & $181$ \\
+				& $1$\,yr & $52$ & $4.4\!\times\!10^{-3}$ & $1.2\%$ & $632$ & $5.0\!\times\!10^{-3}$ & $1.2\%$ & $853$ \\
+			\multirow{3}{*}{\texttt{5a}}
+				& $1$\,mo & $4$  & $2.2\!\times\!10^{-2}$ & $4.9\%$ & $119$ & $1.1\!\times\!10^{-3}$ & $4.5\%$ & $177$ \\
+				& $6$\,mo & $25$ & $1.8\!\times\!10^{-2}$ & $1.9\%$ & $218$ & $9.8\!\times\!10^{-4}$ & $1.9\%$ & $245$ \\
+				& $1$\,yr & $52$ & $2.2\!\times\!10^{-2}$ & $1.3\%$ & $728$ & $8.6\!\times\!10^{-4}$ & $1.3\%$ & $1089$ \\
+		\end{NiceTabular}
 	\end{table*}
 
 	\begin{figure*}[!t]
 		\centering
-		\includegraphics[width=0.48\linewidth]{figures/triangle_noise4a_eta0p5.png}\hfill
-		\includegraphics[width=0.48\linewidth]{figures/triangle_noise5a_eta0p5.png}
+		\includegraphics[width=0.48\linewidth]{figures/triangle_noise4a_eta0p5.pdf}\hfill
+		\includegraphics[width=0.48\linewidth]{figures/triangle_noise5a_eta0p5.pdf}
 		\caption{Posterior summaries of the LISA TDI
 			$X_{2}Y_{2}Z_{2}$ spectral matrix from the unrestricted
 			$\mathcal{H}_{XYZ}$ model for the symmetric \texttt{noise4a}
@@ -1009,17 +1015,32 @@
 	$\S(t,f)$ at the cost of one additional smoothing dimension.
 
 	\paragraph{Improved variational families.}
-	The current SVI guide is a low-rank ($r=16$) multivariate Gaussian.
-	This is sufficient as an initialiser for NUTS but is too restrictive
-	to be used as a final posterior approximation: it cannot represent
-	the heavy tails or weak multi-modality occasionally seen in the
-	off-diagonal Cholesky weights at small $\eta$. Replacing the
-	Gaussian guide with a normalising flow (e.g.\ neural spline or
-	masked autoregressive flow) would give SVI the flexibility to serve
-	as a stand-alone posterior approximation at a fraction of the
-	NUTS wall-clock cost --- attractive for the routine,
-	parameter-estimation-grade PSD updates expected over the LISA
-	mission lifetime.
+	As reported in Section~\ref{subsec:sim_3d_var2}, the current low-rank
+	($r=16$) multivariate Gaussian SVI guide recovers an accurate
+	posterior median but produces visibly narrower credible bands than
+	NUTS, with a corresponding drop in empirical coverage. It is also
+	too restrictive to represent the heavy tails or weak multi-modality
+	occasionally seen in the off-diagonal Cholesky weights at small
+	$\eta$. NUTS is therefore retained as the production sampler in this
+	work, and SVI is used only as an initialiser. Because the model is
+	implemented in NumPyro, the variational family is a swappable
+	component: replacing the Gaussian guide with a normalising flow
+	(e.g.\ a neural spline flow or a masked autoregressive / inverse
+	autoregressive flow) is essentially a one-line change. A systematic
+	study of which variational families recover calibrated PSD
+	posteriors --- so that SVI could serve as a stand-alone approximation
+	at a fraction of the NUTS wall-clock cost, attractive for the
+	routine, parameter-estimation-grade PSD updates expected over the
+	LISA mission lifetime --- is left for future work, as is a
+	corresponding ablation of NUTS with and without the SVI warm-start
+	(quantifying its effect on warm-up length, divergences, and
+	time-to-convergence). A further speculative direction is to use the
+	variational posterior not only to initialise NUTS but to recentre
+	the spline-weight priors on the variational mean, with the
+	variational scale informing the prior width. The trade-off is that
+	this makes the prior data-dependent and informative, which is
+	undesirable when calibration of the final posterior is the goal; we
+	flag it as a direction worth exploring rather than recommend it.
 
 	\paragraph{Other extensions.}
 	The within-bin constant-$\S$ approximation underlying coarse-graining
@@ -1112,7 +1133,7 @@
     \citet{Liu2023}. Entries are mean $\pm$ standard deviation over 500
     independent realisations. Smaller values are better.}
     \label{tab:var2_l2_results}
-    \setlength{\tabcolsep}{12pt}
+    \setlength{\tabcolsep}{10pt}
     \begin{NiceTabular}{lccc}
         \toprule
         {$n$} & {P-spline} & {VB} & {VNPC} \\
@@ -1125,12 +1146,6 @@
 	\end{table}
 
 
-
-	The bivariate $L_{2}$ benchmark in Table~\ref{tab:var2_l2_results}
-	is the headline result of this appendix. Sensitivity studies across
-	the basis size $K$ and the time-series length $n$ are reported in the
-	companion software repository.
-
 	\section{$\eta$-tempering sensitivity on \texttt{noise4a}}
 	\label{app:eta_sweep}
 
@@ -1141,20 +1156,20 @@
 	other settings fixed. Figure~\ref{fig:lisa_eta_sweep} summarises the
 	result.
 
-	\begin{figure*}[!t]
+	\begin{figure}[!t]
 		\centering
-		\includegraphics[width=0.95\linewidth]{figures/lisa_eta_sweep.pdf}
+		\includegraphics[width=\linewidth]{figures/lisa_eta_sweep.pdf}
 		\caption{Safe-Bayes $\eta$-sensitivity on the symmetric LISA
 			\texttt{noise4a} dataset at three observation durations
 			(1\,month, 6\,months, 1\,year).
-			Left: median pointwise relative width of the 90\% credible
+			Top: median pointwise relative width of the 90\% credible
 			band on the diagonal PSDs.
-			Right: matrix RIAE (narrow $y$-range---RIAE varies by
+			Bottom: matrix RIAE (narrow $y$-range---RIAE varies by
 			${\lesssim}5\%$ across the full sweep).
 			The vertical dotted line marks $\eta=0.5$, the value used in
 			Section~\ref{subsec:lisa}.}
 		\label{fig:lisa_eta_sweep}
-	\end{figure*}
+	\end{figure}
 
 	Two features emerge from Figure~\ref{fig:lisa_eta_sweep}.
 	First, the matrix RIAE is essentially flat across the entire sweep:
