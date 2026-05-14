@@ -35,6 +35,10 @@
 	\usepackage{siunitx}
 	\usepackage{float}             % provides [H] strict placement specifier
 	\usepackage[commandnameprefix=ifneeded]{changes}
+	\usepackage{fontawesome5}
+	\newcommand{\codelink}[1]{%
+	  \marginpar{\raggedleft\href{#1}{\scalebox{0.65}{\faGithub}}}%
+	}
 \definechangesauthor[name={Avi}, color=blue]{AV}
 
 \input{custom_commands}
@@ -218,7 +222,7 @@
 	asymptotic Gaussian approximation is the basis of the multivariate
 	Whittle likelihood~\citep{grainger2023multivariate}
 	\begin{align}
-		\label{eq:Whittle likelihood}\mathcal{L}(\d|\S) & \propto \prod_{k=1}^{N}\det(\S(f_{k}))^{-1}\times \nonumber         \\
+		\label{eq:Whittle likelihood}\mathcal{L}(\d|\S) & \propto \prod_{k=1}^{N}\det(\S(f_{k}))^{-1}\times \nonumber \codelink{https://github.com/nz-gravity/LogPSplinePSD/blob/main/src/log_psplines/pipeline/models.py#L81}        \\
 		                                                & \exp\left(-\frac{1}{T}\d(f_{k})^{*} \S(f_{k})^{-1}\d(f_{k})\right),
 	\end{align}
 	where $\d(f_{k})^{*}$ denotes the conjugate transpose of $\d(f_{k})$ and
@@ -509,7 +513,7 @@
 	We model the frequency-dependent Cholesky parameters with penalised
 	B-splines,
 	\begin{align}
-		\log \delta_{jk}^{2}    & = \sum_{m=1}^{K_j}B_{m}(f_{k}) w_{j,m}^{(\delta)}\label{eq:delta_spline}     \\
+		\log \delta_{jk}^{2}    & = \sum_{m=1}^{K_j}B_{m}(f_{k}) w_{j,m}^{(\delta)}\label{eq:delta_spline} \codelink{https://github.com/nz-gravity/LogPSplinePSD/blob/b8e58fd8aaef0c0179499cf7b6a3c2482667626b/src/log_psplines/psplines/psplines.py#L545}    \\
 		\Re[\theta_{jl}(f_{k})] & = \sum_{m=1}^{K_{jl}}B_{m}(f_{k}) w_{jl,m}^{(\Re)}\label{eq:theta_re_spline} \\
 		\Im[\theta_{jl}(f_{k})] & = \sum_{m=1}^{K_{jl}}B_{m}(f_{k}) w_{jl,m}^{(\Im)}\label{eq:theta_im_spline}
 	\end{align}
@@ -550,8 +554,12 @@
 	Eq.~\eqref{eq:likelihood}. Third, we warm-start each MCMC chain from
 	a draw of a stochastic variational approximation to the posterior, to
 	bypass the expensive NUTS adaptation in low-mass-curvature regions.
-	Fourth, we sample the warm-started posterior with NUTS and assess
-	convergence with standard chain diagnostics. The first two stages
+	Fourth, we sample the warm-started posterior with NUTS. The chains
+	still run a standard NUTS warm-up (burn-in) phase that adapts the
+	mass matrix and step size and allows the sampler to correct for any
+	residual bias or under-dispersion inherited from the variational
+	initialisation. 
+	The first two stages
 	are described below, and the remaining two stages are described in
 	the \emph{Implementation} and \emph{Convergence diagnostics}
 	paragraphs that follow.
@@ -1118,7 +1126,9 @@
 	Installation instructions and dependency information (tested on Python~$\geq 3.10$) are provided in the repository \texttt{README}. 
 	The software is released under the MIT License, permitting free use, modification, and distribution. 
 	The datasets generated are available at the public Zenodo repository.
-	LISA time series data is available at~\citep{lisa_noise4a, lisa_noise5a}. 
+	LISA time series data is available at~\citep{lisa_noise4a, lisa_noise5a}.
+	The scripts used for the LISA data analysis presented in this work are available at
+	\url{https://github.com/nz-gravity/lisa_multivar_logpsplines_study}.
 
 
 	\begin{acknowledgments}
