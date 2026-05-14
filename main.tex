@@ -1149,8 +1149,6 @@
 			(1\,month, 6\,months, 1\,year).
 			Left: median pointwise relative width of the 90\% credible
 			band on the diagonal PSDs.
-			Centre: coverage of the 90\% credible band; horizontal
-			dashed line is the nominal $0.9$.
 			Right: matrix RIAE (narrow $y$-range---RIAE varies by
 			${\lesssim}5\%$ across the full sweep).
 			The vertical dotted line marks $\eta=0.5$, the value used in
@@ -1158,7 +1156,7 @@
 		\label{fig:lisa_eta_sweep}
 	\end{figure*}
 
-	Three features emerge from Figure~\ref{fig:lisa_eta_sweep}.
+	Two features emerge from Figure~\ref{fig:lisa_eta_sweep}.
 	First, the matrix RIAE is essentially flat across the entire sweep:
 	it varies by less than $\pm5\%$ about its mean at every duration,
 	confirming that the posterior-median point estimate is nearly
@@ -1168,11 +1166,6 @@
 	the steepest contraction at the longest duration---consistent with
 	the per-bin Fisher information scaling as $N_{b}N_{h}$
 	(Eq.~\eqref{eq:fisher-scaling}).
-	Third, coverage tracks CI width: at $\eta=1$ it falls well below
-	nominal at all durations ($0.10$--$0.34$), while at $\eta=0.01$
-	it recovers $0.86$ at $1$\,month but stalls at $0.61$--$0.67$ at
-	longer durations, indicating that aggressive tempering alone cannot
-	fully compensate for the model's smooth-spline bias.
 
 	The vertical dotted line marks the choice $\eta=0.5$ used in
 	Section~\ref{subsec:lisa}. This value gives a practical
